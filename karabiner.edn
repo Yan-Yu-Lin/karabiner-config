@@ -23,9 +23,10 @@
 
  :templates {:cleanshot "open 'cleanshot://%s'"
              :aero      "/usr/local/bin/aerospace %s"
-             :aero2     "/usr/local/bin/aerospace %s %s"}
+             :aero2     "/usr/local/bin/aerospace %s %s"
+             :kb        "echo '%s' > /tmp/karabiner-scripts.fifo &"}
 
- :applications {}
+ :applications {:arc ["^company\\.thebrowser\\.Browser$"]}
  :layers {}
  :simlayers {}
 
@@ -107,6 +108,11 @@
                  [:k [:aero2 "resize" "height -50"] [:resize-mode]]
                  [:l [:aero2 "resize" "width +50"]  [:resize-mode]]
                  [:escape [["resize-mode" 0] ["window-mode" 0]] [:resize-mode]]]}
+
+        ;; ===== Per-app: Arc Browser =====
+        {:des "Arc - caps+j/k switch spaces"
+         :rules [[:j [:kb "arc-next-space"]  ["caps-mode" 1] :arc]
+                 [:k [:kb "arc-prev-space"]  ["caps-mode" 1] :arc]]}
 
         ;; ===== Caps Lock layer: entry points to sub-layers =====
         {:des "Caps mode - sub-layer entries"
