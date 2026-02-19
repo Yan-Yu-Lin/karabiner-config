@@ -1,0 +1,117 @@
+;; Goku config for Karabiner-Elements
+;; Edit this file — gokuw auto-compiles to karabiner.json
+;;
+;; Modifier shorthand:
+;;   !  = mandatory   #  = optional
+;;   C  = left_command    Q  = right_command
+;;   T  = left_control    W  = right_control
+;;   O  = left_option     E  = right_option
+;;   S  = left_shift      R  = right_shift
+;;   F  = fn              P  = caps_lock
+;;   !! = hyper (cmd+ctrl+opt+shift)
+;;   ## = optional any
+;;
+;; Sub-layer behavior:
+;;   CleanShot (caps+c) = one-shot: action fires then exits mode
+;;   Window (caps+w)    = hold: mode active while W held, release W to exit
+
+{:profiles {:Default {:default true
+                      :sim     50
+                      :delay   500
+                      :alone   500
+                      :held    500}}
+
+ :templates {:cleanshot "open 'cleanshot://%s'"
+             :aero      "/usr/local/bin/aerospace %s"
+             :aero2     "/usr/local/bin/aerospace %s %s"}
+
+ :applications {}
+ :layers {}
+ :simlayers {}
+
+ :main [;; ===== Caps Lock: master key =====
+        ;; Hold = caps-mode, tap alone = escape
+        ;; Resets ALL sub-layer variables (universal escape hatch)
+        {:des "Caps Lock - master layer + reset all modes"
+         :rules [[:caps_lock [["caps-mode" 1]
+                               ["cleanshot-mode" 0]
+                               ["window-mode" 0]
+                               ["resize-mode" 0]]
+                  nil
+                  {:afterup ["caps-mode" 0]
+                   :alone :escape}]]}
+
+        ;; ===== Sub-layer: CleanShot (caps + c) — one-shot =====
+        ;; Hold caps, tap c, release caps, tap action key → fires & exits
+        {:des "CleanShot mode"
+         :rules [[:c [[:cleanshot "capture-area"]                ["cleanshot-mode" 0]] [:cleanshot-mode ["caps-mode" 0]]]
+                 [:a [[:cleanshot "capture-area?action=annotate"] ["cleanshot-mode" 0]] [:cleanshot-mode ["caps-mode" 0]]]
+                 [:v [[:cleanshot "capture-area?action=pin"]      ["cleanshot-mode" 0]] [:cleanshot-mode ["caps-mode" 0]]]
+                 [:p [[:cleanshot "capture-previous-area"]        ["cleanshot-mode" 0]] [:cleanshot-mode ["caps-mode" 0]]]
+                 [:f [[:cleanshot "capture-fullscreen"]           ["cleanshot-mode" 0]] [:cleanshot-mode ["caps-mode" 0]]]
+                 [:w [[:cleanshot "capture-window"]               ["cleanshot-mode" 0]] [:cleanshot-mode ["caps-mode" 0]]]
+                 [:s [[:cleanshot "scrolling-capture"]            ["cleanshot-mode" 0]] [:cleanshot-mode ["caps-mode" 0]]]
+                 [:t [[:cleanshot "capture-text"]                 ["cleanshot-mode" 0]] [:cleanshot-mode ["caps-mode" 0]]]
+                 [:r [[:cleanshot "record-screen"]                ["cleanshot-mode" 0]] [:cleanshot-mode ["caps-mode" 0]]]
+                 [:h [[:cleanshot "open-history"]                 ["cleanshot-mode" 0]] [:cleanshot-mode ["caps-mode" 0]]]
+                 [:escape ["cleanshot-mode" 0] [:cleanshot-mode]]]}
+
+        ;; ===== Sub-layer: Window Management (caps + hold w) — hold =====
+        ;; Hold caps, HOLD w, release caps, tap h/j/k/l repeatedly, release w to exit
+        ;; Mode stays active as long as W is held
+        {:des "Window mode"
+         :rules [;; h/j/k/l = move focus (no mode reset — repeatable)
+                 [:h [:aero "focus left"]                     [:window-mode]]
+                 [:j [:aero "focus down"]                     [:window-mode]]
+                 [:k [:aero "focus up"]                       [:window-mode]]
+                 [:l [:aero "focus right"]                    [:window-mode]]
+                 ;; shift + h/j/k/l = move window
+                 [:!Sh [:aero "move left"]                    [:window-mode]]
+                 [:!Sj [:aero "move down"]                    [:window-mode]]
+                 [:!Sk [:aero "move up"]                      [:window-mode]]
+                 [:!Sl [:aero "move right"]                   [:window-mode]]
+                 ;; f = toggle fullscreen
+                 [:f [:aero "fullscreen"]                     [:window-mode]]
+                 ;; b = balance sizes
+                 [:b [:aero "balance-sizes"]                  [:window-mode]]
+                 ;; e = toggle layout
+                 [:e [:aero "layout tiles horizontal vertical"] [:window-mode]]
+                 ;; 1-9 = jump to workspace
+                 [:1 [:aero "workspace 1"]                    [:window-mode]]
+                 [:2 [:aero "workspace 2"]                    [:window-mode]]
+                 [:3 [:aero "workspace 3"]                    [:window-mode]]
+                 [:4 [:aero "workspace 4"]                    [:window-mode]]
+                 [:5 [:aero "workspace 5"]                    [:window-mode]]
+                 [:6 [:aero "workspace 6"]                    [:window-mode]]
+                 [:7 [:aero "workspace 7"]                    [:window-mode]]
+                 [:8 [:aero "workspace 8"]                    [:window-mode]]
+                 [:9 [:aero "workspace 9"]                    [:window-mode]]
+                 ;; shift + 1-9 = move window to workspace
+                 [:!S1 [:aero "move-node-to-workspace 1"]     [:window-mode]]
+                 [:!S2 [:aero "move-node-to-workspace 2"]     [:window-mode]]
+                 [:!S3 [:aero "move-node-to-workspace 3"]     [:window-mode]]
+                 [:!S4 [:aero "move-node-to-workspace 4"]     [:window-mode]]
+                 [:!S5 [:aero "move-node-to-workspace 5"]     [:window-mode]]
+                 [:!S6 [:aero "move-node-to-workspace 6"]     [:window-mode]]
+                 [:!S7 [:aero "move-node-to-workspace 7"]     [:window-mode]]
+                 [:!S8 [:aero "move-node-to-workspace 8"]     [:window-mode]]
+                 [:!S9 [:aero "move-node-to-workspace 9"]     [:window-mode]]
+                 ;; r = enter resize sub-mode
+                 [:r ["resize-mode" 1]                        [:window-mode]]]}
+
+        ;; ===== Sub-sub-layer: Resize mode (window → r → ...) =====
+        ;; Stays active for repeated resizes, escape or release W to exit
+        {:des "Resize mode"
+         :rules [[:h [:aero2 "resize" "width -50"]  [:resize-mode]]
+                 [:j [:aero2 "resize" "height +50"] [:resize-mode]]
+                 [:k [:aero2 "resize" "height -50"] [:resize-mode]]
+                 [:l [:aero2 "resize" "width +50"]  [:resize-mode]]
+                 [:escape [["resize-mode" 0] ["window-mode" 0]] [:resize-mode]]]}
+
+        ;; ===== Caps Lock layer: entry points to sub-layers =====
+        {:des "Caps mode - sub-layer entries"
+         :rules [;; CleanShot: one-shot (tap c, release)
+                 [:c ["cleanshot-mode" 1] ["caps-mode" 1]]
+                 ;; Window: hold-based (HOLD w, release w to exit)
+                 [:w ["window-mode" 1] ["caps-mode" 1]
+                  {:afterup [["window-mode" 0] ["resize-mode" 0]]}]]}]}
