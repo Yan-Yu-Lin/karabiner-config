@@ -4,6 +4,7 @@ import AppKit
 // MARK: - Configuration
 let home = NSHomeDirectory()
 let configPath = home + "/Library/Scripts/karabiner-scripts/actions.json"
+let scriptsDir = home + "/karabiner-config/scripts"
 let fifoPath = "/tmp/karabiner-scripts.fifo"
 
 // MARK: - Logging
@@ -78,6 +79,21 @@ enum Action {
     case shell(command: String)
 }
 
+// MARK: - AppleScript Compilation Helper
+func compileScript(name: String, source: String) -> NSAppleScript? {
+    guard let script = NSAppleScript(source: source) else {
+        log("ERROR: Could not create script for '\(name)'")
+        return nil
+    }
+    var error: NSDictionary?
+    script.compileAndReturnError(&error)
+    if let error = error {
+        log("ERROR: Compile '\(name)': \(error[NSAppleScript.errorMessage] ?? "unknown")")
+        return nil
+    }
+    return script
+}
+
 // MARK: - Action Store
 class ActionStore {
     private var actions: [String: Action] = [:]
@@ -98,18 +114,20 @@ class ActionStore {
                     // AX menu click — fast path
                     actions[name] = .menu(app: appName, path: menuPath)
                 } else if let source = dict["applescript"] as? String {
-                    // Pre-compiled AppleScript — fast, needs Automation permission
-                    guard let script = NSAppleScript(source: source) else {
-                        log("ERROR: Could not create script for '\(name)'")
+                    // Inline AppleScript string
+                    if let compiled = compileScript(name: name, source: source) {
+                        actions[name] = .applescript(compiled: compiled)
+                    }
+                } else if let filePath = dict["applescript_file"] as? String {
+                    // AppleScript from file (relative to scriptsDir or absolute)
+                    let fullPath = filePath.hasPrefix("/") ? filePath : scriptsDir + "/" + filePath
+                    guard let source = try? String(contentsOfFile: fullPath, encoding: .utf8) else {
+                        log("ERROR: Could not read file for '\(name)': \(fullPath)")
                         continue
                     }
-                    var error: NSDictionary?
-                    script.compileAndReturnError(&error)
-                    if let error = error {
-                        log("ERROR: Compile '\(name)': \(error[NSAppleScript.errorMessage] ?? "unknown")")
-                        continue
+                    if let compiled = compileScript(name: name, source: source) {
+                        actions[name] = .applescript(compiled: compiled)
                     }
-                    actions[name] = .applescript(compiled: script)
                 } else if let cmd = dict["shell"] as? String {
                     actions[name] = .shell(command: cmd)
                 }

@@ -19,8 +19,7 @@ Karabiner-Elements keyboard customization with Goku EDN config and a custom Swif
 | LaunchAgent | `~/Library/LaunchAgents/com.user.karabiner-scripts.plist` |
 | Daemon log | `/tmp/karabiner-scripts.log` |
 | FIFO (IPC pipe) | `/tmp/karabiner-scripts.fifo` |
-| Legacy helper (unused) | `~/Applications/KarabinerHelper.app` (can delete) |
-| Legacy trigger (unused) | `~/Library/Scripts/karabiner-scripts/kbtrigger` (can delete) |
+| AppleScript files | `~/karabiner-config/scripts/*.applescript` |
 
 ## The Daemon: KarabinerScripts
 
@@ -40,16 +39,18 @@ AppleScript via `osascript` is slow (~300-500ms) because every keypress spawns a
 
 ```json
 {
-  "arc-next-space":  {"app": "Arc", "menu": ["Spaces", "Next Space"]},
-  "arc-prev-space":  {"app": "Arc", "menu": ["Spaces", "Previous Space"]},
-  "some-applescript": {"applescript": "tell application \"Finder\" to activate"},
-  "some-command":    {"shell": "open 'cleanshot://capture-area'"},
-  "legacy-compat":   "open 'some://url'"
+  "arc-next-space":   {"app": "Arc", "menu": ["Spaces", "Next Space"]},
+  "arc-prev-space":   {"app": "Arc", "menu": ["Spaces", "Previous Space"]},
+  "inline-script":    {"applescript": "tell application \"Finder\" to activate"},
+  "file-script":      {"applescript_file": "my-script.applescript"},
+  "some-command":     {"shell": "open 'cleanshot://capture-area'"},
+  "legacy-compat":    "open 'some://url'"
 }
 ```
 
-- `menu`: Fast path. Walks the app's menu bar via AX API. Needs the exact menu item names.
-- `applescript`: Pre-compiled at daemon startup. First execution is slow (~2s, cold), subsequent ~130ms.
+- `menu`: Fast path (~20ms). Walks the app's menu bar via AX API. Needs the exact menu item names.
+- `applescript`: Inline string. Pre-compiled at daemon startup. First execution ~2s (cold), subsequent ~130ms.
+- `applescript_file`: Loads from `~/karabiner-config/scripts/<filename>`. Same speed as inline, but you write real multi-line AppleScript in a proper file. Relative paths resolve to the scripts dir; absolute paths work too.
 - `shell`: Spawns `/bin/sh -c "command"`. Good for URL schemes and CLI tools.
 - Plain string: Treated as shell command (backwards compat).
 
