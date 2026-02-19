@@ -110,9 +110,10 @@
                  [:escape [["resize-mode" 0] ["window-mode" 0]] [:resize-mode]]]}
 
         ;; ===== Per-app: Arc Browser =====
-        {:des "Arc - caps+j/k switch spaces"
+        {:des "Arc - caps+j/k spaces, caps+s sort tabs"
          :rules [[:j [:kb "arc-next-space"]  ["caps-mode" 1] :arc]
-                 [:k [:kb "arc-prev-space"]  ["caps-mode" 1] :arc]]}
+                 [:k [:kb "arc-prev-space"]  ["caps-mode" 1] :arc]
+                 [:s [:kb "arc-sort-tabs"]   ["caps-mode" 1] :arc]]}
 
         ;; ===== Caps Lock layer: entry points to sub-layers =====
         {:des "Caps mode - sub-layer entries"

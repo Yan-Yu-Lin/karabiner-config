@@ -1,5 +1,6 @@
 {
   "arc-next-space": {"app": "Arc", "menu": ["Spaces", "Next Space"]},
   "arc-prev-space": {"app": "Arc", "menu": ["Spaces", "Previous Space"]},
-  "test-applescript": {"applescript": "tell application \"System Events\" to get name of first process whose frontmost is true"}
+  "test-applescript": {"applescript": "tell application \"System Events\" to get name of first process whose frontmost is true"},
+  "arc-sort-tabs": {"shell": "/usr/bin/python3 /Users/linyanyu/karabiner-config/scripts/sort-arc-tabs.py"}
 }
