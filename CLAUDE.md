@@ -170,8 +170,16 @@ URL scheme via `:cleanshot` template. Keys: C=area, A=annotate, V=pin, P=previou
 ### Window/AeroSpace (Caps + hold W → hold-based)
 CLI via `:aero` template. H/J/K/L=focus, Shift+HJKL=move, F=fullscreen, B=balance, 1-9=workspace, Shift+1-9=move-to-workspace. R=resize sub-mode.
 
-### Arc (Caps + J/K — per-app, via daemon)
-AX menu clicks via `:kb` template → daemon FIFO. J=Next Space, K=Previous Space. Only active when Arc is frontmost.
+### Arc (per-app, via daemon)
+Only active when Arc is frontmost. Uses `:kb` template → daemon FIFO.
+
+- **Caps + J/K** — Switch spaces. AX menu clicks (~20ms).
+- **Caps + S** — Sort unpinned (Today) tabs alphabetically by base domain. Runs `scripts/sort-arc-tabs.py` via daemon shell action.
+
+#### How tab sorting works
+Arc has no reorder/move API for tabs. The trick: pin all unpinned tabs (moves them out of Today), then unpin them in reverse alphabetical order (each lands at top of Today → A-Z result). Uses batched AppleScript — one `osascript` call per pass, not per tab. ~3s for ~17 tabs.
+
+**AX API won't work here.** Tested and failed — the Accessibility framework can't handle rapid-fire menu clicks (works for ~3 clicks then silently fails). System Events via AppleScript is slower per-click but reliable for batch operations.
 
 ## App Automation Discovery
 
