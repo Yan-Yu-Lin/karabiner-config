@@ -2,7 +2,6 @@
 """Sort Arc's unpinned (Today) tabs by base domain, alphabetically."""
 
 import subprocess
-import time
 from urllib.parse import urlparse
 
 
@@ -11,10 +10,6 @@ def osascript(script):
     if r.returncode != 0:
         raise RuntimeError(r.stderr.strip())
     return r.stdout.strip()
-
-
-def notify(msg):
-    osascript(f'display notification "{msg}" with title "Arc Tab Sort"')
 
 
 def get_unpinned_tabs():
@@ -43,9 +38,11 @@ def get_unpinned_tabs():
     return tabs
 
 
-def select_and_pin(tab_id):
-    """Select a tab and toggle its pin state in one AppleScript call."""
-    osascript(f'''
+def build_sort_script(sorted_ids):
+    """Generate one AppleScript that does all select+pin operations."""
+    blocks = []
+    for tab_id in sorted_ids:
+        blocks.append(f'''
         tell application "Arc"
             tell front window
                 select (first tab whose id is "{tab_id}")
@@ -55,30 +52,27 @@ def select_and_pin(tab_id):
             tell process "Arc"
                 click (first menu item of menu "Tabs" of menu bar 1 whose name contains "Pin")
             end tell
-        end tell
-    ''')
+        end tell''')
+    return "\n".join(blocks)
 
 
 def main():
     tabs = get_unpinned_tabs()
     if len(tabs) <= 1:
-        notify("Nothing to sort")
+        osascript('display notification "Nothing to sort" with title "Arc Tab Sort"')
         return
 
     sorted_tabs = sorted(tabs, key=lambda t: t[2])  # by domain
-    notify(f"Sorting {len(sorted_tabs)} tabs...")
+    osascript(f'display notification "Sorting {len(sorted_tabs)} tabs..." with title "Arc Tab Sort"')
 
-    # Step 1: Pin all unpinned tabs (moves them out of Today)
-    for tab_id, url, domain in sorted_tabs:
-        select_and_pin(tab_id)
+    # Pin all, then unpin in reverse order — all in two osascript calls
+    pin_ids = [t[0] for t in sorted_tabs]
+    unpin_ids = [t[0] for t in reversed(sorted_tabs)]
 
-    # Step 2: Unpin in reverse alphabetical order
-    # Each unpin places the tab at the TOP of Today,
-    # so the last one unpinned (A) ends up on top → A-Z order
-    for tab_id, url, domain in reversed(sorted_tabs):
-        select_and_pin(tab_id)
+    osascript(build_sort_script(pin_ids))      # pin all
+    osascript(build_sort_script(unpin_ids))     # unpin in reverse
 
-    notify("Done!")
+    osascript('display notification "Done!" with title "Arc Tab Sort"')
 
 
 if __name__ == "__main__":
