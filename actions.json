@@ -1,0 +1,5 @@
+{
+  "arc-next-space": {"app": "Arc", "menu": ["Spaces", "Next Space"]},
+  "arc-prev-space": {"app": "Arc", "menu": ["Spaces", "Previous Space"]},
+  "test-applescript": {"applescript": "tell application \"System Events\" to get name of first process whose frontmost is true"}
+}
