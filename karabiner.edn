@@ -110,10 +110,13 @@
                  [:escape [["resize-mode" 0] ["window-mode" 0]] [:resize-mode]]]}
 
         ;; ===== Per-app: Arc Browser =====
-        {:des "Arc - caps+j/k spaces, caps+s sort tabs"
+        {:des "Arc - caps+j/k spaces, caps+s sort tabs, cmd+\\ toggle pinned"
          :rules [[:j [:kb "arc-next-space"]  [:arc ["caps-mode" 1]]]
                  [:k [:kb "arc-prev-space"]  [:arc ["caps-mode" 1]]]
-                 [:s [:kb "arc-sort-tabs"]   [:arc ["caps-mode" 1]]]]}
+                 [:s [:kb "arc-sort-tabs"]   [:arc ["caps-mode" 1]]]
+                 ;; Cmd+\ toggle: expand/collapse pinned tabs
+                 [:!Cbackslash [:!Cbackslash  ["arc-pinned-expanded" 1]] [:arc ["arc-pinned-expanded" 0]]]
+                 [:!Cbackslash [:!CSbackslash ["arc-pinned-expanded" 0]] [:arc ["arc-pinned-expanded" 1]]]]}
 
         ;; ===== Caps Lock layer: entry points to sub-layers =====
         {:des "Caps mode - sub-layer entries"
