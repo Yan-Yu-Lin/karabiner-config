@@ -111,9 +111,9 @@
 
         ;; ===== Per-app: Arc Browser =====
         {:des "Arc - caps+j/k spaces, caps+s sort tabs"
-         :rules [[:j [:kb "arc-next-space"]  ["caps-mode" 1] :arc]
-                 [:k [:kb "arc-prev-space"]  ["caps-mode" 1] :arc]
-                 [:s [:kb "arc-sort-tabs"]   ["caps-mode" 1] :arc]]}
+         :rules [[:j [:kb "arc-next-space"]  [:arc ["caps-mode" 1]]]
+                 [:k [:kb "arc-prev-space"]  [:arc ["caps-mode" 1]]]
+                 [:s [:kb "arc-sort-tabs"]   [:arc ["caps-mode" 1]]]]}
 
         ;; ===== Caps Lock layer: entry points to sub-layers =====
         {:des "Caps mode - sub-layer entries"
