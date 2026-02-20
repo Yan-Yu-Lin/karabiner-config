@@ -20,6 +20,12 @@ Karabiner-Elements keyboard customization with Goku EDN config and a custom Swif
 | Daemon log | `/tmp/karabiner-scripts.log` |
 | FIFO (IPC pipe) | `/tmp/karabiner-scripts.fifo` |
 | AppleScript files | `~/karabiner-config/scripts/*.applescript` |
+| HUD source | `~/Library/Scripts/karabiner-hud/hud.swift` |
+| HUD app bundle | `~/Library/Scripts/karabiner-hud/KarabinerHUD.app` |
+| HUD modes config | `~/Library/Scripts/karabiner-hud/modes.json` |
+| HUD LaunchAgent | `~/Library/LaunchAgents/com.user.karabiner-hud.plist` |
+| HUD log | `/tmp/karabiner-hud.log` |
+| HUD FIFO | `/tmp/karabiner-hud.fifo` |
 
 ## The Daemon: KarabinerScripts
 
@@ -133,6 +139,29 @@ When adding a new sub-layer:
 3. Add action rules in a new section
 4. Choose: one-shot (reset mode in each action) or hold-based (`{:afterup ["mode" 0]}` on entry key)
 
+### Hyper Key (Right Command)
+
+Right Command is remapped to Cmd+Ctrl+Opt (hyper). This is a global mapping — all apps see these three modifiers when Right Command is held.
+
+```clojure
+[:##right_command :!TOleft_command]
+```
+
+Hyper shortcuts are configured **in the target app** (e.g., Raycast extension hotkeys), not as Karabiner shell commands. This gives native-speed hotkey response (~instant) vs deep link URL schemes (~300ms).
+
+To restrict a hyper shortcut to specific apps, use the **app-gating pattern**: swallow the key everywhere except the target app, so the target app's native hotkey listener catches it.
+
+```clojure
+;; Block Hyper+A everywhere EXCEPT Arc and Raycast
+;; :!arc = frontmost_application_unless (negated condition)
+[:!CTOa :vk_none [:!arc :!raycast]]
+```
+
+When adding a new app-gated hyper shortcut:
+1. Configure the hotkey in the target app (e.g., Raycast → Extensions → set Cmd+Ctrl+Opt+KEY)
+2. Add a blocking rule in "Hyper gates" section for all other apps
+3. Include both the target app AND any app that might be frontmost during interaction (e.g., Raycast floats over Arc)
+
 ### Per-app rules
 
 ```clojure
@@ -175,11 +204,64 @@ Only active when Arc is frontmost. Uses `:kb` template → daemon FIFO.
 
 - **Caps + J/K** — Switch spaces. AX menu clicks (~20ms).
 - **Caps + S** — Sort unpinned (Today) tabs alphabetically by base domain. Runs `scripts/sort-arc-tabs.py` via daemon shell action.
+- **Hyper + A** — Raycast Arc search. App-gated: configured as Raycast extension hotkey (Cmd+Ctrl+Opt+A), blocked by Karabiner when not in Arc/Raycast.
 
 #### How tab sorting works
 Arc has no reorder/move API for tabs. The trick: pin all unpinned tabs (moves them out of Today), then unpin them in reverse alphabetical order (each lands at top of Today → A-Z result). Uses batched AppleScript — one `osascript` call per pass, not per tab. ~3s for ~17 tabs.
 
 **AX API won't work here.** Tested and failed — the Accessibility framework can't handle rapid-fire menu clicks (works for ~3 clicks then silently fails). System Events via AppleScript is slower per-click but reliable for batch operations.
+
+## The HUD: KarabinerHUD
+
+A floating overlay that shows the current mode and available keys. Separate from the daemon — zero permissions needed, safe to recompile anytime.
+
+### What it does
+
+- Shows a translucent panel at bottom-center of screen when a mode activates
+- Lists available keys for the current mode
+- App-aware: shows extra keys based on frontmost app (e.g., Arc-specific keys in Caps mode)
+- Opens URLs via `NSWorkspace` without stealing focus (`activates = false`)
+- Auto-hides after 8 seconds (safety net for stuck variables)
+
+### FIFO commands
+
+```bash
+echo 'show caps' > /tmp/karabiner-hud.fifo       # Show mode HUD
+echo 'hide' > /tmp/karabiner-hud.fifo             # Always hide
+echo 'hide caps' > /tmp/karabiner-hud.fifo        # Hide only if showing "caps"
+echo 'url cleanshot://capture-area' > /tmp/karabiner-hud.fifo  # Open URL without focus steal
+```
+
+Conditional hide (`hide <mode>`) prevents sub-modes from being dismissed when Caps Lock is released. Caps afterup sends `hide caps` — ignored if HUD is showing a sub-mode like "window".
+
+### modes.json
+
+External config for HUD content. Edit and `kill -HUP $(pgrep -f KarabinerHUD)` to reload without recompile. Supports per-app extra keys via bundle IDs.
+
+### Managing the HUD
+
+```bash
+# Reload modes.json
+kill -HUP $(pgrep -f KarabinerHUD)
+
+# Recompile (safe — no permissions to lose)
+cd ~/Library/Scripts/karabiner-hud
+swiftc -O -o KarabinerHUD.app/Contents/MacOS/KarabinerHUD hud.swift
+codesign --force --sign - KarabinerHUD.app
+launchctl kickstart -k gui/$(id -u)/com.user.karabiner-hud
+```
+
+### Key Karabiner gotcha: only last shell_command executes
+
+Since Karabiner-Elements v13.7.0, if a rule's `to` array has multiple `shell_command` items, only the LAST one runs. Combine commands into a single string:
+
+```clojure
+;; WRONG — CleanShot URL silently dropped, only HUD hide runs
+[:c [[:cleanshot "capture-area"] ["cleanshot-mode" 0] [:hud "hide"]] conditions]
+
+;; CORRECT — bake hide into the :cleanshot template itself
+:cleanshot "open -g 'cleanshot://%s' ; echo 'hide' > /tmp/karabiner-hud.fifo"
+```
 
 ## App Automation Discovery
 
@@ -199,8 +281,12 @@ osascript -e 'tell application "System Events" to get name of every menu item of
 
 | Method | Latency | Use case |
 |--------|---------|----------|
+| App-gated hotkey (Raycast native) | ~instant | App shortcuts via hyper key |
 | AX API (daemon `menu`) | ~20ms | Menu clicks, button presses |
+| HUD FIFO → NSWorkspace.open | ~20ms | URL schemes without focus steal |
 | NSAppleScript (daemon `applescript`) | ~130ms warm | App scripting, complex automation |
 | Shell command (daemon `shell`) | ~50ms + cmd | URL schemes, CLI tools |
+| `open -g` via shell_command | ~300ms | URL schemes (shell spawn overhead) |
+| Deep link URL schemes (Raycast) | ~300ms+ | Avoid — use native hotkeys instead |
 | Raw osascript (no daemon) | ~145ms | Fallback |
 | Old chain (helper→jq→osascript) | ~400ms | Don't use this |

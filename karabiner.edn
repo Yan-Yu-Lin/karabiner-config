@@ -21,14 +21,15 @@
                       :alone   500
                       :held    500}}
 
- :templates {:cleanshot "open -g 'cleanshot://%s' ; echo 'hide' > /tmp/karabiner-hud.fifo"
+ :templates {:cleanshot "echo 'url cleanshot://%s' > /tmp/karabiner-hud.fifo ; echo 'hide' > /tmp/karabiner-hud.fifo"
              :aero      "/usr/local/bin/aerospace %s"
              :aero2     "/usr/local/bin/aerospace %s %s"
              :kb        "echo '%s' > /tmp/karabiner-scripts.fifo &"
              :hud       "echo '%s' > /tmp/karabiner-hud.fifo &"
-             :open      "open -g '%s'"}
+             :open      "echo 'url %s' > /tmp/karabiner-hud.fifo &"}
 
- :applications {:arc ["^company\\.thebrowser\\.Browser$"]}
+ :applications {:arc     ["^company\\.thebrowser\\.Browser$"]
+                :raycast ["^com\\.raycast\\.macos$"]}
  :layers {}
  :simlayers {}
 
@@ -122,9 +123,15 @@
                  [:k [:kb "arc-prev-space"]  [:arc ["caps-mode" 1]]]
                  [:s [:kb "arc-sort-tabs"]   [:arc ["caps-mode" 1]]]
                  ;; Cmd+\ toggle: expand/collapse pinned tabs via daemon
-                 [:!Cbackslash [:kb "arc-toggle-pinned"] [:arc]]
-                 ;; Hyper+A = Raycast Arc search
-                 [:!CTOa [:open "raycast://extensions/the-browser-company/arc/search"] [:arc]]]}
+                 [:!Cbackslash [:kb "arc-toggle-pinned"] [:arc]]]}
+
+        ;; ===== Hyper key app-gated shortcuts =====
+        ;; Raycast listens for these globally; we block them when not in the right app
+        ;; so they only fire in context. Without these rules, the key passes through
+        ;; and Raycast catches it.
+        {:des "Hyper gates - block shortcuts outside target app"
+         :rules [;; Hyper+A → Raycast Arc search: swallow when NOT in Arc
+                 [:!CTOa :vk_none [:!arc :!raycast]]]}
 
         ;; ===== Caps Lock layer: entry points to sub-layers =====
         {:des "Caps mode - sub-layer entries"
