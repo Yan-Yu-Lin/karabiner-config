@@ -114,9 +114,8 @@
          :rules [[:j [:kb "arc-next-space"]  [:arc ["caps-mode" 1]]]
                  [:k [:kb "arc-prev-space"]  [:arc ["caps-mode" 1]]]
                  [:s [:kb "arc-sort-tabs"]   [:arc ["caps-mode" 1]]]
-                 ;; Cmd+\ toggle: expand/collapse pinned tabs
-                 [:!Cbackslash [:!Cbackslash  ["arc-pinned-expanded" 1]] [:arc ["arc-pinned-expanded" 0]]]
-                 [:!Cbackslash [:!CSbackslash ["arc-pinned-expanded" 0]] [:arc ["arc-pinned-expanded" 1]]]]}
+                 ;; Cmd+\ toggle: expand/collapse pinned tabs via daemon
+                 [:!Cbackslash [:kb "arc-toggle-pinned"] [:arc]]]}
 
         ;; ===== Caps Lock layer: entry points to sub-layers =====
         {:des "Caps mode - sub-layer entries"
