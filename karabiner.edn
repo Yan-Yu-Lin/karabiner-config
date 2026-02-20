@@ -21,11 +21,12 @@
                       :alone   500
                       :held    500}}
 
- :templates {:cleanshot "open 'cleanshot://%s'"
+ :templates {:cleanshot "open -g 'cleanshot://%s' ; echo 'hide' > /tmp/karabiner-hud.fifo"
              :aero      "/usr/local/bin/aerospace %s"
              :aero2     "/usr/local/bin/aerospace %s %s"
              :kb        "echo '%s' > /tmp/karabiner-scripts.fifo &"
-             :hud       "echo '%s' > /tmp/karabiner-hud.fifo &"}
+             :hud       "echo '%s' > /tmp/karabiner-hud.fifo &"
+             :open      "open -g '%s'"}
 
  :applications {:arc ["^company\\.thebrowser\\.Browser$"]}
  :layers {}
@@ -57,7 +58,7 @@
                  [:t [[:cleanshot "capture-text"]                 ["cleanshot-mode" 0]] [:cleanshot-mode ["caps-mode" 0]]]
                  [:r [[:cleanshot "record-screen"]                ["cleanshot-mode" 0]] [:cleanshot-mode ["caps-mode" 0]]]
                  [:h [[:cleanshot "open-history"]                 ["cleanshot-mode" 0]] [:cleanshot-mode ["caps-mode" 0]]]
-                 [:escape ["cleanshot-mode" 0] [:cleanshot-mode]]]}
+                 [:escape [["cleanshot-mode" 0] [:hud "hide"]] [:cleanshot-mode]]]}
 
         ;; ===== Sub-layer: Window Management (caps + hold w) — hold =====
         ;; Hold caps, HOLD w, release caps, tap h/j/k/l repeatedly, release w to exit
@@ -111,13 +112,19 @@
                  [:l [:aero2 "resize" "width +50"]  [:resize-mode]]
                  [:escape [["resize-mode" 0] [:hud "show window"]] [:resize-mode]]]}
 
+        ;; ===== Right Command → Hyper (Cmd+Ctrl+Opt) =====
+        {:des "Right Command → Hyper (Cmd+Ctrl+Opt)"
+         :rules [[:##right_command :!TOleft_command]]}
+
         ;; ===== Per-app: Arc Browser =====
         {:des "Arc - caps+j/k spaces, caps+s sort tabs, cmd+\\ toggle pinned"
          :rules [[:j [:kb "arc-next-space"]  [:arc ["caps-mode" 1]]]
                  [:k [:kb "arc-prev-space"]  [:arc ["caps-mode" 1]]]
                  [:s [:kb "arc-sort-tabs"]   [:arc ["caps-mode" 1]]]
                  ;; Cmd+\ toggle: expand/collapse pinned tabs via daemon
-                 [:!Cbackslash [:kb "arc-toggle-pinned"] [:arc]]]}
+                 [:!Cbackslash [:kb "arc-toggle-pinned"] [:arc]]
+                 ;; Hyper+A = Raycast Arc search
+                 [:!CTOa [:open "raycast://extensions/the-browser-company/arc/search"] [:arc]]]}
 
         ;; ===== Caps Lock layer: entry points to sub-layers =====
         {:des "Caps mode - sub-layer entries"
