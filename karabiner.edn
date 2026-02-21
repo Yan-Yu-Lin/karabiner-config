@@ -26,7 +26,11 @@
              :aero2     "/usr/local/bin/aerospace %s %s"
              :kb        "echo '%s' > /tmp/karabiner-scripts.fifo &"
              :hud       "echo '%s' > /tmp/karabiner-hud.fifo &"
-             :open      "echo 'url %s' > /tmp/karabiner-hud.fifo &"}
+             :open      "echo 'url %s' > /tmp/karabiner-hud.fifo &"
+             :ime-save  "(/opt/homebrew/bin/macime set com.apple.keylayout.ABC --save --session-id %s; touch /tmp/karabiner-ime-active) &"
+             :ime-load  "([ -f /tmp/karabiner-ime-active ] && rm /tmp/karabiner-ime-active && echo 'ime load --session-id %s --cjk-refresh' | /usr/bin/nc -U /tmp/riodelphino.macimed.sock) &"
+             :ime-load-hud "([ -f /tmp/karabiner-ime-active ] && rm /tmp/karabiner-ime-active && echo 'ime load --session-id %s --cjk-refresh' | /usr/bin/nc -U /tmp/riodelphino.macimed.sock; echo 'hide caps' > /tmp/karabiner-hud.fifo) &"
+             :ime-switch "$HOME/karabiner-config/scripts/ime-switch %s &"}
 
  :applications {:arc     ["^company\\.thebrowser\\.Browser$"]
                 :raycast ["^com\\.raycast\\.macos$"]}
@@ -36,8 +40,27 @@
  :main [;; ===== Caps Lock: master key =====
         ;; Hold = caps-mode, tap alone = escape
         ;; Resets ALL sub-layer variables (universal escape hatch)
+        ;; ##caps_lock = match regardless of held modifiers (prevents real Caps Lock)
+        ;; Future idea: use modifier+caps combos as separate leader keys:
+        ;;   [:!Ccaps_lock [["cmd-caps-mode" 1] ...] nil ...]   ;; Cmd+Caps → new mode
+        ;;   [:!Scaps_lock [["shift-caps-mode" 1] ...] nil ...] ;; Shift+Caps → another
+        ;; If adding those, change ## back to bare :caps_lock for the default,
+        ;; and add specific !C / !S rules above it (Karabiner matches first hit).
+        ;; Two rules: arc-bar-mode variant first (avoids shell_command conflict
+        ;; between to_if_alone and to_after_key_up — only last shell runs)
         {:des "Caps Lock - master layer + reset all modes"
-         :rules [[:caps_lock [["caps-mode" 1]
+         :rules [;; When in arc bar mode: alone bakes HUD hide into its shell cmd
+                 ;; so afterup has no shell_command to conflict with
+                 [:##caps_lock [["caps-mode" 1]
+                               ["cleanshot-mode" 0]
+                               ["window-mode" 0]
+                               ["resize-mode" 0]
+                               [:hud "show caps"]]
+                  ["arc-bar-mode" 1]
+                  {:afterup [["caps-mode" 0]]
+                   :alone [[:ime-load-hud "arc-bar"] ["arc-bar-mode" 0] :escape]}]
+                 ;; Default: normal caps behavior
+                 [:##caps_lock [["caps-mode" 1]
                                ["cleanshot-mode" 0]
                                ["window-mode" 0]
                                ["resize-mode" 0]
@@ -117,6 +140,13 @@
         {:des "Right Command → Hyper (Cmd+Ctrl+Opt)"
          :rules [[:##right_command :!TOleft_command]]}
 
+        ;; ===== Cmd+Space → toggle IME =====
+        ;; Uses ime-switch helper (proper CJK initialization with window trick)
+        ;; Variable "ime-english" tracks current state (1=ABC, 0=Zhuyin)
+        {:des "Cmd+Space → toggle IME"
+         :rules [[:!Cspacebar [[:ime-switch "toggle"] ["ime-english" 0]] ["ime-english" 1]]
+                 [:!Cspacebar [[:ime-switch "toggle"] ["ime-english" 1]] ["ime-english" 0]]]}
+
         ;; ===== Per-app: Arc Browser =====
         {:des "Arc - caps+j/k spaces, caps+s sort tabs, cmd+\\ toggle pinned"
          :rules [[:j [:kb "arc-next-space"]  [:arc ["caps-mode" 1]]]
@@ -124,6 +154,24 @@
                  [:s [:kb "arc-sort-tabs"]   [:arc ["caps-mode" 1]]]
                  ;; Cmd+\ toggle: expand/collapse pinned tabs via daemon
                  [:!Cbackslash [:kb "arc-toggle-pinned"] [:arc]]]}
+
+        ;; ===== Per-app: Arc - Smart IME switching for address bar =====
+        ;; Cmd+T/L: save current IME, switch to English, pass key through
+        ;; Enter/Esc/Cmd+T/Cmd+L again: restore previous IME, pass key through
+        ;; Uses macime with session-id "arc-bar" for save/restore
+        ;; :ime-load goes through macimed daemon socket (not CLI) because:
+        ;; 1. macime load --session-id is broken in CLI v4.2.0 (validation bug)
+        ;; 2. Daemon has run loop needed for --cjk-refresh window trick
+        ;; 3. --cjk-refresh forces proper CJK sub-mode initialization
+        {:des "Arc - IME switching for address bar"
+         :rules [;; Enter bar mode: save IME → English → pass key through
+                 [:!Ct [[:ime-save "arc-bar"] ["arc-bar-mode" 1] :!Ct] [:arc ["arc-bar-mode" 0]]]
+                 [:!Cl [[:ime-save "arc-bar"] ["arc-bar-mode" 1] :!Cl] [:arc ["arc-bar-mode" 0]]]
+                 ;; Exit bar mode: restore IME → pass key through
+                 [:!Ct [[:ime-load "arc-bar"] ["arc-bar-mode" 0] :!Ct] [:arc ["arc-bar-mode" 1]]]
+                 [:!Cl [[:ime-load "arc-bar"] ["arc-bar-mode" 0] :!Cl] [:arc ["arc-bar-mode" 1]]]
+                 [:return_or_enter [[:ime-load "arc-bar"] ["arc-bar-mode" 0] :return_or_enter] [:arc ["arc-bar-mode" 1]]]
+                 [:escape [[:ime-load "arc-bar"] ["arc-bar-mode" 0] :escape] [:arc ["arc-bar-mode" 1]]]]}
 
         ;; ===== Hyper key app-gated shortcuts =====
         ;; Raycast listens for these globally; we block them when not in the right app
