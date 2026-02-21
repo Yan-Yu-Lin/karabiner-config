@@ -1,12 +1,26 @@
 import Cocoa
 import Carbon
 
-// Usage: ime-switch toggle | ime-switch <input-source-id>
-// Toggle: ABC ↔ Zhuyin. Direct: switch to specified input source.
-// For CJK sources, uses a brief window trick to force proper mode initialization.
+// Usage:
+//   ime-switch toggle
+//   ime-switch <input-source-id>
+//   ime-switch arc-enter <session-id>
+//   ime-switch arc-mark-override <session-id>
+//   ime-switch arc-exit <session-id>
+// Toggle/direct switch use TIS APIs.
+// Arc commands manage command-bar IME session state.
 
 let ABC = "com.apple.keylayout.ABC"
 let ZHUYIN = "com.apple.inputmethod.TCIM.Zhuyin"
+let stateDir = "/tmp/karabiner-ime"
+let arcStateTTLSeconds: TimeInterval = 120
+
+struct ArcState {
+    let prevID: String
+    let switchedByAutomation: Bool
+    let overriddenByUser: Bool
+    let createdAt: TimeInterval
+}
 
 func getCurrentID() -> String? {
     guard let source = TISCopyCurrentKeyboardInputSource()?.takeRetainedValue() else { return nil }
@@ -26,6 +40,127 @@ func selectSource(_ id: String) -> Bool {
 func isCJK(_ id: String) -> Bool {
     // CJK input methods have input_mode_id; keyboard layouts (ABC) don't
     return id.contains("inputmethod")
+}
+
+func applyTarget(_ targetID: String) {
+    if getCurrentID() == targetID { return }
+    if isCJK(targetID) {
+        switchWithCJKFix(to: targetID)
+    } else {
+        _ = selectSource(targetID)
+    }
+}
+
+func ensureStateDir() {
+    try? FileManager.default.createDirectory(atPath: stateDir, withIntermediateDirectories: true)
+}
+
+func arcStatePath(_ sessionID: String) -> String {
+    return "\(stateDir)/\(sessionID).arc-state"
+}
+
+func writeArcState(_ sessionID: String, _ state: ArcState) {
+    ensureStateDir()
+    let payload = [
+        "prev=\(state.prevID)",
+        "switched=\(state.switchedByAutomation ? "1" : "0")",
+        "override=\(state.overriddenByUser ? "1" : "0")",
+        "ts=\(state.createdAt)",
+    ].joined(separator: "\n") + "\n"
+    try? payload.write(toFile: arcStatePath(sessionID), atomically: true, encoding: .utf8)
+}
+
+func readArcState(_ sessionID: String) -> ArcState? {
+    guard let payload = try? String(contentsOfFile: arcStatePath(sessionID), encoding: .utf8) else {
+        return nil
+    }
+
+    var map: [String: String] = [:]
+    for rawLine in payload.split(separator: "\n") {
+        let line = String(rawLine)
+        guard let eq = line.firstIndex(of: "=") else { continue }
+        let key = String(line[..<eq])
+        let value = String(line[line.index(after: eq)...])
+        map[key] = value
+    }
+
+    guard let prevID = map["prev"] else { return nil }
+    let switched = map["switched"] == "1"
+    let overridden = map["override"] == "1"
+    let ts = TimeInterval(map["ts"] ?? "") ?? Date().timeIntervalSince1970
+
+    return ArcState(prevID: prevID, switchedByAutomation: switched, overriddenByUser: overridden, createdAt: ts)
+}
+
+func clearArcState(_ sessionID: String) {
+    try? FileManager.default.removeItem(atPath: arcStatePath(sessionID))
+}
+
+func sendNativeCmdSpace() {
+    guard let source = CGEventSource(stateID: .hidSystemState),
+          let down = CGEvent(keyboardEventSource: source, virtualKey: 49, keyDown: true),
+          let up = CGEvent(keyboardEventSource: source, virtualKey: 49, keyDown: false)
+    else { return }
+
+    down.flags = .maskCommand
+    up.flags = .maskCommand
+    down.post(tap: .cghidEventTap)
+    up.post(tap: .cghidEventTap)
+}
+
+func toggleWithFallback(expectedAfterToggle targetID: String) {
+    sendNativeCmdSpace()
+    RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.05))
+    if getCurrentID() != targetID {
+        applyTarget(targetID)
+    }
+}
+
+func arcEnter(_ sessionID: String) {
+    let currentID = getCurrentID() ?? ABC
+    let switched = (currentID == ZHUYIN)
+
+    writeArcState(
+        sessionID,
+        ArcState(
+            prevID: currentID,
+            switchedByAutomation: switched,
+            overriddenByUser: false,
+            createdAt: Date().timeIntervalSince1970
+        )
+    )
+
+    if switched {
+        toggleWithFallback(expectedAfterToggle: ABC)
+    }
+}
+
+func arcMarkOverride(_ sessionID: String) {
+    guard let state = readArcState(sessionID) else { return }
+    writeArcState(
+        sessionID,
+        ArcState(
+            prevID: state.prevID,
+            switchedByAutomation: state.switchedByAutomation,
+            overriddenByUser: true,
+            createdAt: state.createdAt
+        )
+    )
+}
+
+func arcExit(_ sessionID: String) {
+    guard let state = readArcState(sessionID) else { return }
+    defer { clearArcState(sessionID) }
+
+    if Date().timeIntervalSince1970 - state.createdAt > arcStateTTLSeconds { return }
+    if !state.switchedByAutomation { return }
+    if state.overriddenByUser { return }
+
+    if state.prevID == ZHUYIN {
+        toggleWithFallback(expectedAfterToggle: ZHUYIN)
+    } else {
+        applyTarget(state.prevID)
+    }
 }
 
 func switchWithCJKFix(to targetID: String) {
@@ -75,17 +210,22 @@ let currentID = getCurrentID() ?? ABC
 
 if command == "toggle" {
     if currentID == ABC {
-        switchWithCJKFix(to: ZHUYIN)
+        applyTarget(ZHUYIN)
     } else {
-        _ = selectSource(ABC)
+        applyTarget(ABC)
     }
+} else if command == "arc-enter" {
+    guard args.count > 2 else { exit(2) }
+    arcEnter(args[2])
+} else if command == "arc-mark-override" {
+    guard args.count > 2 else { exit(2) }
+    arcMarkOverride(args[2])
+} else if command == "arc-exit" {
+    guard args.count > 2 else { exit(2) }
+    arcExit(args[2])
 } else {
     // Direct switch to specified ID
-    if isCJK(command) {
-        switchWithCJKFix(to: command)
-    } else {
-        _ = selectSource(command)
-    }
+    applyTarget(command)
 }
 
 // Print result for callers that want to know
