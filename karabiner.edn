@@ -147,6 +147,11 @@
          :rules [[:!Cspacebar [[:ime-switch "toggle"] ["ime-english" 0]] ["ime-english" 1]]
                  [:!Cspacebar [[:ime-switch "toggle"] ["ime-english" 1]] ["ime-english" 0]]]}
 
+        ;; ===== Right Shift shortcuts: force IME =====
+        {:des "Right Shift+E/Z force IME"
+         :rules [[:!Re [[:ime-switch "com.apple.keylayout.ABC"] ["ime-english" 1]]]
+                 [:!Rz [[:ime-switch "com.apple.inputmethod.TCIM.Zhuyin"] ["ime-english" 0]]]]}
+
         ;; ===== Per-app: Arc Browser =====
         {:des "Arc - caps+j/k spaces, caps+s sort tabs, cmd+\\ toggle pinned"
          :rules [[:j [:kb "arc-next-space"]  [:arc ["caps-mode" 1]]]
