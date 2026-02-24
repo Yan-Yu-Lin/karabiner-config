@@ -277,6 +277,46 @@ plutil -p "/Applications/AppName.app/Contents/Info.plist" | grep -A3 "URLSchemes
 osascript -e 'tell application "System Events" to get name of every menu item of menu "MenuName" of menu bar 1 of process "AppName"'
 ```
 
+## In-Progress Feature Branch: feat/menu-bar-layer
+
+### What it is
+A new **Caps + M** one-shot sub-layer for accessing menu bar extras (status items in the top-right) via keyboard. Same pattern as CleanShot (caps+c): hold caps, tap m, release caps, tap action key.
+
+### What works
+- **VPN** (V) — WireGuard toggle via AXPress
+- **Docker** (K) — opens Docker menu via AXPress
+- **AlDente** (A) — opens charge limit menu via AXPress
+- **Wi-Fi toggle** (W) — on/off via `networksetup` CLI
+
+### What doesn't work yet — iStat Menus
+6 keys (C=CPU, T=temp, M=memory, N=network, D=disk, B=battery) are wired but non-functional. iStat Menus uses custom NSPopover instead of standard NSMenu, so AXPress fires but the popup never opens. This is a known macOS limitation — only real mouse events trigger iStat's popovers.
+
+### What we tried
+1. `perform action "AXPress"` via AppleScript — returns without error but no popup
+2. `click menu bar item` via AppleScript — same, `missing value`
+3. With/without `ignoring application responses` — same
+4. Daemon NSAppleScript vs terminal osascript — same
+5. AX C API directly (`kAXExtrasMenuBarAttribute`) — works for ~33% of apps, not iStat
+
+### Two approaches to fix iStat (see td notes for full details)
+**Option A (try first): iStat built-in hotkeys**
+iStat Menus 7 has a hotkey feature in Settings → Rules tab. Configure a shortcut per menu, then trigger via `keystroke` AppleScript. Official, clean, zero hacks.
+Docs: https://bjango.com/help/istatmenus7/hotkeys/
+
+**Option B: Replicate Ice's CGEvent technique**
+Ice (open source, github.com/jordanbaird/Ice) clicks menu bar items using targeted CGEvent with private CoreGraphics APIs — sets PID + windowID on the event so it targets a specific window, not just coordinates. Hides cursor, clicks, warps back. Works universally. More complex to implement.
+Key source: `Ice/MenuBar/MenuBarItemManager.swift:1170-1253`
+
+### Issue tracking
+The branch has `td` initialized. Run `td usage --new-session` then `td status` to see the epic and issues.
+
+### Key finding about menu bar automation
+- **menu bar 1** = app menus (File, Edit...) — fully AX-accessible
+- **menu bar 2** = status items (NSStatusItem) — AXPress works for standard NSMenu apps, fails for custom popover apps
+- **ControlCenter** is the exception — its menu bar 1 IS the status bar
+- Third-party apps need `ignoring application responses` in AppleScript or they block for ~1.5s
+- Direct system APIs (networksetup, CoreAudio, etc.) are always better than clicking menu bar items when available
+
 ## Speed Reference
 
 | Method | Latency | Use case |
