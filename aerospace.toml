@@ -101,6 +101,12 @@ alt-8 = 'workspace 8'
 alt-9 = 'workspace 9'
 alt-0 = 'workspace 10'
 
+# Extra workspaces
+alt-q = 'workspace Q'
+alt-leftSquareBracket = 'workspace ['
+alt-rightSquareBracket = 'workspace ]'
+alt-backslash = 'workspace |'
+
 # Move windows to workspace (and follow)
 alt-shift-1 = 'move-node-to-workspace 1 --focus-follows-window'
 alt-shift-2 = 'move-node-to-workspace 2 --focus-follows-window'
@@ -112,6 +118,12 @@ alt-shift-7 = 'move-node-to-workspace 7 --focus-follows-window'
 alt-shift-8 = 'move-node-to-workspace 8 --focus-follows-window'
 alt-shift-9 = 'move-node-to-workspace 9 --focus-follows-window'
 alt-shift-0 = 'move-node-to-workspace 10 --focus-follows-window'
+
+# Extra workspace moves
+alt-shift-q = 'move-node-to-workspace Q --focus-follows-window'
+alt-shift-leftSquareBracket = 'move-node-to-workspace [ --focus-follows-window'
+alt-shift-rightSquareBracket = 'move-node-to-workspace ] --focus-follows-window'
+alt-shift-backslash = 'move-node-to-workspace | --focus-follows-window'
 
 # Toggle between last two workspaces
 alt-tab = 'workspace-back-and-forth'
