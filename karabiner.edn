@@ -33,10 +33,18 @@
                 :raycast ["^com\\.raycast\\.macos$"]
                 :ghostty ["^com\\.mitchellh\\.ghostty$"]
                 :cmux    ["^com\\.cmuxterm\\.app$"]}
+ :input-sources {:zhuyin {:input_source_id "^com\\.apple\\.inputmethod\\.TCIM$"
+                          :input_mode_id "^com\\.apple\\.inputmethod\\.TCIM\\.Zhuyin$"}}
  :layers {}
  :simlayers {}
 
- :main [;; ===== Caps Lock: master key =====
+ :main [;; ===== Fix: Zhuyin eats Ctrl+number — re-send to bypass input method =====
+        {:des "Zhuyin - pass through Ctrl+numbers"
+         :rules [[:!T1 :!T1 [:zhuyin]] [:!T2 :!T2 [:zhuyin]] [:!T3 :!T3 [:zhuyin]]
+                 [:!T4 :!T4 [:zhuyin]] [:!T5 :!T5 [:zhuyin]] [:!T6 :!T6 [:zhuyin]]
+                 [:!T7 :!T7 [:zhuyin]] [:!T8 :!T8 [:zhuyin]] [:!T9 :!T9 [:zhuyin]]]}
+
+        ;; ===== Caps Lock: master key =====
         ;; Hold = caps-mode, tap alone = escape
         ;; Resets ALL sub-layer variables (universal escape hatch)
         {:des "Caps Lock - master layer + reset all modes"
