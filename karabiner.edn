@@ -157,22 +157,17 @@
                  [:x [:tmux "kill-pane"] [:ghostty ["caps-mode" 1]]]]}
 
         ;; ===== Per-app: cmux =====
-        {:des "cmux - swap cmd/ctrl numbers, caps+hjkl pane focus"
-         :rules [;; Swap Cmd+N → Ctrl+N (so Cmd+number selects surface/horizontal tab)
-                 [:!C1 :!T1 [:cmux]]  [:!C2 :!T2 [:cmux]]  [:!C3 :!T3 [:cmux]]
-                 [:!C4 :!T4 [:cmux]]  [:!C5 :!T5 [:cmux]]  [:!C6 :!T6 [:cmux]]
-                 [:!C7 :!T7 [:cmux]]  [:!C8 :!T8 [:cmux]]  [:!C9 :!T9 [:cmux]]
-                 ;; Swap Ctrl+N → Cmd+N (so Ctrl+number selects workspace/sidebar)
-                 [:!T1 :!C1 [:cmux]]  [:!T2 :!C2 [:cmux]]  [:!T3 :!C3 [:cmux]]
-                 [:!T4 :!C4 [:cmux]]  [:!T5 :!C5 [:cmux]]  [:!T6 :!C6 [:cmux]]
-                 [:!T7 :!C7 [:cmux]]  [:!T8 :!C8 [:cmux]]  [:!T9 :!C9 [:cmux]]
-                 ;; Caps+HJKL = Focus Pane (sends Cmd+Opt+arrow)
+        {:des "cmux - caps+hjkl pane focus, caps+[/] workspace switch"
+         :rules [;; Caps+HJKL = Focus Pane (sends Cmd+Opt+arrow)
                  [:h :!COleft_arrow  [:cmux ["caps-mode" 1]]]
                  [:j :!COdown_arrow  [:cmux ["caps-mode" 1]]]
                  [:k :!COup_arrow    [:cmux ["caps-mode" 1]]]
                  [:l :!COright_arrow [:cmux ["caps-mode" 1]]]
                  ;; f = toggle pane zoom (Cmd+Shift+Enter)
-                 [:f :!CSreturn_or_enter [:cmux ["caps-mode" 1]]]]}
+                 [:f :!CSreturn_or_enter [:cmux ["caps-mode" 1]]]
+                 ;; [ / ] = prev/next workspace (Cmd+Ctrl+[/])
+                 [:open_bracket  :!CTopen_bracket  [:cmux ["caps-mode" 1]]]
+                 [:close_bracket :!CTclose_bracket [:cmux ["caps-mode" 1]]]]}
 
         ;; ===== Hyper key app-gated shortcuts =====
         ;; Raycast listens for these globally; we block them when not in the right app
