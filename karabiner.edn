@@ -38,7 +38,17 @@
  :layers {}
  :simlayers {}
 
- :main [;; ===== Fix: Zhuyin eats Ctrl+number — re-send to bypass input method =====
+ :main [;; ===== Cmd+Space → emit caps_lock at HID layer =====
+        ;; Apple's "Use Caps Lock to switch to and from ABC" toggle is ON,
+        ;; so caps_lock injected through Karabiner's virtual HID device hits
+        ;; IOKit's input switcher (same path as Fn key — clean, no Tahoe TSM
+        ;; propagation bug). User's physical Caps Lock = Esc rule below
+        ;; intercepts real key, so this output rule and that input rule
+        ;; coexist without conflict.
+        {:des "Cmd+Space → caps_lock tap-on-release (IOKit input switcher)"
+         :rules [[:!Cspacebar :vk_none nil {:afterup :caps_lock}]]}
+
+        ;; ===== Fix: Zhuyin eats Ctrl+number — re-send to bypass input method =====
         {:des "Zhuyin - pass through Ctrl+numbers"
          :rules [[:!T1 :!T1 [:zhuyin]] [:!T2 :!T2 [:zhuyin]] [:!T3 :!T3 [:zhuyin]]
                  [:!T4 :!T4 [:zhuyin]] [:!T5 :!T5 [:zhuyin]] [:!T6 :!T6 [:zhuyin]]
