@@ -61,6 +61,11 @@
                                ["minecraft-mode" 0]
                                ["mcbridge-page2" 0]
                                ["mcbridge-page2-group-1" 0]
+                               ["wurst-attack" 0]
+                               ["wurst-sky" 0]
+                               ["wurst-detect" 0]
+                               ["wurst-work" 0]
+                               ["wurst-wacky" 0]
                                [:hud "show caps"]]
                   nil
                   {:afterup [["caps-mode" 0] [:hud "hide caps"]]
@@ -238,6 +243,53 @@
          :rules [[:!CTOo {:shell "echo 'next' > /tmp/spacenav.fifo &" :repeat false}]
                  [:!CTOu {:shell "echo 'prev' > /tmp/spacenav.fifo &" :repeat false}]]}
 
+        ;; ===== Wurst hack tree (ported from Arthur's 1.21 F-modal; Caps+category, then action) =====
+        ;; Hold Caps, tap category (A/S/D/W/E), release Caps, tap action key -> hack toggles via
+        ;; mcx wurst (in-process CmdProcessor, never server chat). Escape cancels. Caps re-hold
+        ;; resets all categories (master escape hatch). One-shot: every action exits the mode.
+        {:des "Wurst tree - category entries (Caps+A/S/D/W/E in gameplay)"
+         :rules [[:a ["wurst-attack" 1] [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 1]]]
+                 [:s ["wurst-sky" 1]    [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 1]]]
+                 [:d ["wurst-detect" 1] [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 1]]]
+                 [:w ["wurst-work" 1]   [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 1]]]
+                 [:e ["wurst-wacky" 1]  [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 1]]]]}
+
+        {:des "Wurst tree - attack (Caps+A then key)"
+         :rules [[:a [[:mcx "wurst t clickaura"] ["wurst-attack" 0]] [:minecraft ["wurst-attack" 1] ["caps-mode" 0]]]
+                 [:s [[:mcx "wurst t killaura"]  ["wurst-attack" 0]] [:minecraft ["wurst-attack" 1] ["caps-mode" 0]]]
+                 [:d [[:mcx "wurst t multiaura"] ["wurst-attack" 0]] [:minecraft ["wurst-attack" 1] ["caps-mode" 0]]]
+                 [:w [[:mcx "wurst t arrowdmg"]  ["wurst-attack" 0]] [:minecraft ["wurst-attack" 1] ["caps-mode" 0]]]
+                 [:escape ["wurst-attack" 0] [["wurst-attack" 1]]]]}
+
+        {:des "Wurst tree - skywalker (Caps+S then key)"
+         :rules [[:w [[:mcx "wurst t jesus"]       ["wurst-sky" 0]] [:minecraft ["wurst-sky" 1] ["caps-mode" 0]]]
+                 [:a [[:mcx "wurst t extraelytra"] ["wurst-sky" 0]] [:minecraft ["wurst-sky" 1] ["caps-mode" 0]]]
+                 [:s [[:mcx "wurst t jetpack"]     ["wurst-sky" 0]] [:minecraft ["wurst-sky" 1] ["caps-mode" 0]]]
+                 [:d [[:mcx "wurst t nofall"]      ["wurst-sky" 0]] [:minecraft ["wurst-sky" 1] ["caps-mode" 0]]]
+                 [:escape ["wurst-sky" 0] [["wurst-sky" 1]]]]}
+
+        {:des "Wurst tree - detection (Caps+D then key)"
+         :rules [[:w [[:mcx "wurst t x-ray"]      ["wurst-detect" 0]] [:minecraft ["wurst-detect" 1] ["caps-mode" 0]]]
+                 [:a [[:mcx "wurst t playeresp"]  ["wurst-detect" 0]] [:minecraft ["wurst-detect" 1] ["caps-mode" 0]]]
+                 [:s [[:mcx "wurst t mobesp"]     ["wurst-detect" 0]] [:minecraft ["wurst-detect" 1] ["caps-mode" 0]]]
+                 [:d [[:mcx "wurst t fullbright"] ["wurst-detect" 0]] [:minecraft ["wurst-detect" 1] ["caps-mode" 0]]]
+                 [:escape ["wurst-detect" 0] [["wurst-detect" 1]]]]}
+
+        {:des "Wurst tree - workshop (Caps+W then key)"
+         :rules [[:w [[:mcx "wurst t fastbreak"]     ["wurst-work" 0]] [:minecraft ["wurst-work" 1] ["caps-mode" 0]]]
+                 [:a [[:mcx "wurst t tunneller"]     ["wurst-work" 0]] [:minecraft ["wurst-work" 1] ["caps-mode" 0]]]
+                 [:s [[:mcx "wurst t scaffoldwalk"]  ["wurst-work" 0]] [:minecraft ["wurst-work" 1] ["caps-mode" 0]]]
+                 [:d [[:mcx "wurst t speednuker"]    ["wurst-work" 0]] [:minecraft ["wurst-work" 1] ["caps-mode" 0]]]
+                 [:tab [[:mcx "wurst t excavator"]   ["wurst-work" 0]] [:minecraft ["wurst-work" 1] ["caps-mode" 0]]]
+                 [:escape ["wurst-work" 0] [["wurst-work" 1]]]]}
+
+        {:des "Wurst tree - wacky (Caps+E then key)"
+         :rules [[:w [[:mcx "wurst t headroll"]   ["wurst-wacky" 0]] [:minecraft ["wurst-wacky" 1] ["caps-mode" 0]]]
+                 [:a [[:mcx "wurst t derp"]       ["wurst-wacky" 0]] [:minecraft ["wurst-wacky" 1] ["caps-mode" 0]]]
+                 [:s [[:mcx "wurst t mileycyrus"] ["wurst-wacky" 0]] [:minecraft ["wurst-wacky" 1] ["caps-mode" 0]]]
+                 [:d [[:mcx "wurst t headless"]   ["wurst-wacky" 0]] [:minecraft ["wurst-wacky" 1] ["caps-mode" 0]]]
+                 [:escape ["wurst-wacky" 0] [["wurst-wacky" 1]]]]}
+
         ;; ===== MCBridge FULL layer (generated, faithful to Arthur's layout) — mcctx-gated =====
         ;; gameplay/screen/chat modes via mc_ctx_*; page2 = Caps+Period overflow. Delete these blocks + reset-vars to revert.
         {:des "MCBridge gameplay - preserved physical layout"
@@ -361,13 +413,13 @@
         ;; ===== Caps Lock layer: entry points to sub-layers =====
         {:des "Caps mode - sub-layer entries"
          :rules [;; CleanShot: one-shot (tap c, release)
-                 [:c [["cleanshot-mode" 1] [:hud "show cleanshot"]] ["caps-mode" 1]]
+                 [:c [["cleanshot-mode" 1] [:hud "show cleanshot"]] [:!minecraft ["caps-mode" 1]]]
                  ;; R: cycle key-repeat delay 500/250/180ms (script shows HUD)
-                 [:r "/Users/linyanyu/karabiner-config/scripts/toggle-key-repeat.sh" ["caps-mode" 1]]
+                 [:r "/Users/linyanyu/karabiner-config/scripts/toggle-key-repeat.sh" [:!minecraft ["caps-mode" 1]]]
                  ;; B: toggle JankyBorders fade animation on/off (script shows HUD)
-                 [:b "/Users/linyanyu/karabiner-config/scripts/toggle-border-fade.sh" ["caps-mode" 1]]
+                 [:b "/Users/linyanyu/karabiner-config/scripts/toggle-border-fade.sh" [:!minecraft ["caps-mode" 1]]]
                  ;; Minecraft: one-shot proof layer, app-gated to Prism/Minecraft JVM
                  [:g ["minecraft-mode" 1] [:minecraft ["caps-mode" 1]]]
                  ;; Window: hold-based (HOLD w, release w to exit)
-                 [:w [["window-mode" 1] [:hud "show window"]] ["caps-mode" 1]
+                 [:w [["window-mode" 1] [:hud "show window"]] [:!minecraft ["caps-mode" 1]]
                   {:afterup [["window-mode" 0] ["resize-mode" 0] [:hud "hide"]]}]]}]}
