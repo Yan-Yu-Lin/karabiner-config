@@ -27,7 +27,6 @@
              :aero      "/opt/homebrew/bin/aerospace %s"
              :aero2     "/opt/homebrew/bin/aerospace %s %s"
              :tmux      "/opt/homebrew/bin/tmux %s"
-             :mcx       "/Users/linyanyu/.local/bin/mcx %s"
              :kb        "echo '%s' > /tmp/karabiner-scripts.fifo &"
              :hud       "echo '%s' > /tmp/karabiner-hud.fifo &"
              :open      "echo 'url %s' > /tmp/karabiner-hud.fifo &"}
@@ -58,7 +57,6 @@
                                ["cleanshot-mode" 0]
                                ["window-mode" 0]
                                ["resize-mode" 0]
-                               ["minecraft-mode" 0]
                                ["mcbridge-page2" 0]
                                ["mcbridge-page2-group-1" 0]
                                ["wurst-attack" 0]
@@ -138,14 +136,6 @@
                  [:l [:aero2 "resize" "width +50"]  [:resize-mode]]
                  [:escape [["resize-mode" 0] [:hud "show window"]] [:resize-mode]]]}
 
-        ;; ===== MCBridge proof layer (Caps+G → one-shot, Minecraft/Prism only) =====
-        ;; Hold Caps, tap G, release Caps, then: F=.fly, I=inventory, S=status.
-        {:des "Minecraft mode - MCBridge proof bindings"
-         :rules [[:f [[:mcx "chat .fly"]                 ["minecraft-mode" 0]] [:minecraft ["minecraft-mode" 1] ["caps-mode" 0]]]
-                 [:i [{:shell "/bin/bash -c 'exec 3<>/dev/tcp/127.0.0.1/25580; printf \"GET /k/key.inventory/tap HTTP/1.0\\r\\n\\r\\n\" >&3'"}
-                      ["minecraft-mode" 0]] [:minecraft ["minecraft-mode" 1] ["caps-mode" 0]]]
-                 [:s [[:mcx "status"]                    ["minecraft-mode" 0]] [:minecraft ["minecraft-mode" 1] ["caps-mode" 0]]]
-                 [:escape ["minecraft-mode" 0] [:minecraft ["minecraft-mode" 1]]]]}
 
         ;; ===== Right Command → Hyper (Cmd+Ctrl+Opt) =====
         {:des "Right Command → Hyper (Cmd+Ctrl+Opt)"
@@ -418,8 +408,6 @@
                  [:r "/Users/linyanyu/karabiner-config/scripts/toggle-key-repeat.sh" [:!minecraft ["caps-mode" 1]]]
                  ;; B: toggle JankyBorders fade animation on/off (script shows HUD)
                  [:b "/Users/linyanyu/karabiner-config/scripts/toggle-border-fade.sh" [:!minecraft ["caps-mode" 1]]]
-                 ;; Minecraft: one-shot proof layer, app-gated to Prism/Minecraft JVM
-                 [:g ["minecraft-mode" 1] [:minecraft ["caps-mode" 1]]]
                  ;; Window: hold-based (HOLD w, release w to exit)
                  [:w [["window-mode" 1] [:hud "show window"]] [:!minecraft ["caps-mode" 1]]
                   {:afterup [["window-mode" 0] ["resize-mode" 0] [:hud "hide"]]}]]}]}
