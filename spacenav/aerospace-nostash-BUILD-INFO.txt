@@ -1,0 +1,19 @@
+AeroSpace native-Space no-stash v3 build
+
+Upstream base: 649301b2875b6eec23abda9b24bc765eecd37bf1 (v0.21.2-Beta)
+V1 commit: 4542d967bf428ffe1cd118d14924aea6004f23ae
+V2 commit: 10f89b19e95654aa7759f4e6f49d76ecb227a472
+V3 commit: 690539f1081fc031c166f4f870ce9dffbe57998e
+Displayed version: 0.21.2-Beta-nostash3
+Build: Xcode 26.0 Release, universal arm64+x86_64
+Signing: ad-hoc, bundle identifier bobko.aerospace
+Swift package validation: Swift 6.3.2, 383 tests passed
+Native Space automatic-refresh hide suppression: 1.0 second
+Native-fullscreen focus hide suppression: scoped to the focused monitor
+Native-fullscreen layout preservation for move-node-to-workspace: enabled
+
+App binary SHA-256:
+054ff63e3886b0d37aba7ee0d18fe388338fdf4acf0c4f53f71f04b1bbb92343
+
+Full patch-series SHA-256:
+b300e53ab06404c357a9b94e243e43935e763741186b6d3ee4d5d3515eba6dba

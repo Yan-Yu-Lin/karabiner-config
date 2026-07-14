@@ -6,7 +6,7 @@ start-at-login = true
 
 # Start JankyBorders and SketchyBar with AeroSpace
 after-startup-command = [
-  'exec-and-forget borders active_color=0xffffffff inactive_color=0x00000000 width=8.0',
+  'exec-and-forget /bin/bash -c "/opt/homebrew/bin/borders-fade active_color=0xffffffff inactive_color=0x00000000 width=8.0 hidpi=on fade_duration=$(cat ~/.config/borders-fade-duration 2>/dev/null || echo 150)"',
   'exec-and-forget sketchybar',
   'exec-and-forget sketchybar_row2',
 ]
@@ -105,7 +105,7 @@ alt-0 = 'workspace 10'
 alt-q = 'workspace Q'
 alt-leftSquareBracket = 'workspace ['
 alt-rightSquareBracket = 'workspace ]'
-alt-backslash = 'workspace |'
+alt-backslash = 'workspace "|"'
 
 # Move windows to workspace (and follow)
 alt-shift-1 = 'move-node-to-workspace 1 --focus-follows-window'
@@ -123,7 +123,7 @@ alt-shift-0 = 'move-node-to-workspace 10 --focus-follows-window'
 alt-shift-q = 'move-node-to-workspace Q --focus-follows-window'
 alt-shift-leftSquareBracket = 'move-node-to-workspace [ --focus-follows-window'
 alt-shift-rightSquareBracket = 'move-node-to-workspace ] --focus-follows-window'
-alt-shift-backslash = 'move-node-to-workspace | --focus-follows-window'
+alt-shift-backslash = 'move-node-to-workspace "|" --focus-follows-window'
 
 # Toggle between last two workspaces
 alt-tab = 'workspace-back-and-forth'

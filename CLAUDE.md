@@ -199,6 +199,32 @@ URL scheme via `:cleanshot` template. Keys: C=area, A=annotate, V=pin, P=previou
 ### Window/AeroSpace (Caps + hold W → hold-based)
 CLI via `:aero` template. H/J/K/L=focus, Shift+HJKL=move, F=fullscreen, B=balance, 1-9=workspace, Shift+1-9=move-to-workspace. R=resize sub-mode.
 
+### Vim navigation (global, migrated from BTT 2026-07)
+Left Option = movement layer: H/J/K/L=arrows, W/B=word fwd/back, A=end of line, I=start of line, G=doc top. Left Option+Shift = same but selecting; ⌥⇧G=doc bottom. Plain key remaps — key repeat and rollover work natively. The old BTT triggers still exist but are disabled (re-enable via `update_trigger` with `BTTEnabled: 1` if ever needed).
+
+### Key repeat delay toggle (Caps + R)
+`scripts/toggle-key-repeat.sh` cycles the "delay until repeat" 500→250→180ms. Sets live value via `hidutil` (instant) + persists via `defaults write -g InitialKeyRepeat` (ticks of 15ms). HUD flashes the current speed (modes `repeat-500/250/180` in modes.json).
+
+### Instant Space switch (Hyper + O/U, migrated from BTT 2026-07)
+`spacenav next|prev` switches real macOS Spaces with NO animation — same private mechanism BTT's "Move Left/Right a Space (Without Animation)" uses: a synthetic max-velocity DockSwipe CGEvent (undocumented type 30 / HID subtype 23) that Dock commits in ~1 frame. NOT `CGSManagedDisplaySetCurrentSpace` (that desyncs Dock/Mission Control outside Dock).
+
+- Source: `spacenav/spacenav.swift` (single file), binary: `~/.local/bin/spacenav`
+- Rebuild: `swiftc -O -framework ApplicationServices -framework CoreGraphics -o ~/.local/bin/spacenav spacenav/spacenav.swift && codesign --force --sign - ~/.local/bin/spacenav`
+- **Runs as a RESIDENT DAEMON** (`spacenav --daemon`, LaunchAgent `com.user.spacenav`, FIFO `/tmp/spacenav.fifo`, log `/tmp/spacenav.log`). Karabiner echoes `next`/`prev` directly into the FIFO → keypress→switch ≈15ms (one-shot spawn path was ~100ms; spacenav cold-start alone is ~70ms). One-shot CLI mode (`spacenav next|prev|dump`) still works for debugging.
+- ⚠️ **Rebuilding the binary invalidates the daemon's Accessibility grant** (ad-hoc signature = TCC identity). After rebuild: re-add `~/.local/bin/spacenav` in System Settings → Accessibility, then `launchctl kickstart -k gui/$(id -u)/com.user.spacenav`.
+- The `space-next`/`space-prev` actions in actions.json also just echo into the FIFO (kept for compatibility)
+- Karabiner binding uses `repeat: false` (fire once per press, uncapped manual spam — matches BTT)
+- Clamps at first/last Space (no wrap), includes fullscreen Spaces — matches BTT behavior
+- Gesture profile = current yabai (progress ±1, velocity ±9999, began→ended, DockControl only)
+- Private API caveats: fields may break on macOS updates (BTT already ships an "augmented DockSwipe" for macOS 27); don't invoke while Mission Control is open
+- Old BTT hyper+o/u triggers disabled, not deleted
+- `spacenav dump` prints raw CGS space dicts (debugging); space type 0=desktop, 4=fullscreen app
+
+#### AeroSpace coordination + the patched AeroSpace (wallpaper-flash fix)
+Returning from a native-fullscreen Space used to flash wallpaper-then-windows. Root cause: the fullscreen window (Arc, ws10) lives in a different AeroSpace workspace than the desktop windows (ws1); on arrival AeroSpace's settling refresh corner-stashed the "background-workspace" desktop windows, then un-stashed. Two-part fix:
+1. **spacenav speaks AeroSpace's socket protocol directly** (`AeroClient` in spacenav.swift; `/tmp/bobko.aerospace-<user>.sock`, UInt32 handshake=1, length-prefixed JSON; request's `workspace` field MUST be null — it's env context, not the target). Leaving the desktop it saves the focused window's workspace (`/tmp/.spacenav.desktop-ws`); returning it re-focuses that workspace the instant the space ID changes — restores focus (e.g. back to cmux). Kill switch: `touch /tmp/.spacenav-no-aero`.
+2. **Patched AeroSpace `0.21.2-Beta-nostash3`** — the deterministic flash fix. Invariant: the corner-stash only serves workspace emulation WITHIN one native Space, so it's skipped whenever a transition crosses native Spaces: (v2) for 1s after `activeSpaceDidChange` for automatic refreshes; (v3) whenever the focused window is native-fullscreen (covers alt-0 explicit switches, Spotlight/cmd-tab/Dock activations), scoped to the focused monitor. v3 also fixes an upstream bug: `move-node-to-workspace --focus-follows-window` stripped the window's fullscreen classification (likely the original cause of Arc's workspace drift). Patch: `spacenav/aerospace-nostash.patch` (+ BUILD-INFO). Stock backup: `~/Desktop/AeroSpace-stock-0.21.2-Beta.zip`. Cask is `brew pin`ned. On upgrade: unpin → upgrade → apply patch to new tag → build (repo build script, Swift 6.x) → replace app → re-grant Accessibility (new ad-hoc signature = new TCC identity) → re-pin. `aerospace --version` client/server mismatch warning is expected (stock CLI + nostash server).
+
 ### Arc (per-app, via daemon)
 Only active when Arc is frontmost. Uses `:kb` template → daemon FIFO.
 
