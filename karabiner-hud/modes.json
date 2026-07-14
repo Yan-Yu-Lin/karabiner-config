@@ -1,0 +1,479 @@
+{
+    "caps": {
+        "title": "CAPS",
+        "keys": [
+            [
+                "C",
+                "screenshot"
+            ],
+            [
+                "W",
+                "window"
+            ],
+            [
+                "M",
+                "menu bar"
+            ],
+            [
+                "R",
+                "key repeat"
+            ],
+            [
+                "B",
+                "border fade"
+            ]
+        ],
+        "apps": {
+            "company.thebrowser.Browser": {
+                "extra": [
+                    [
+                        "J/K",
+                        "spaces"
+                    ],
+                    [
+                        "S",
+                        "sort tabs"
+                    ]
+                ]
+            },
+            "com.cmuxterm.app": {
+                "extra": [
+                    [
+                        "H/J/K/L",
+                        "focus pane"
+                    ],
+                    [
+                        "[ / ]",
+                        "workspace"
+                    ]
+                ]
+            },
+            "com.mitchellh.ghostty": {
+                "extra": [
+                    [
+                        "H/J/K/L",
+                        "tmux pane"
+                    ],
+                    [
+                        "\u21e7 H/J/K/L",
+                        "swap pane"
+                    ],
+                    [
+                        "F",
+                        "zoom"
+                    ],
+                    [
+                        "V/S",
+                        "split"
+                    ],
+                    [
+                        "X",
+                        "kill pane"
+                    ]
+                ]
+            },
+            "path:^/Users/linyanyu/Library/Application Support/PrismLauncher/java/.*/bin/java$": {
+                "replace": [
+                    [
+                        "A",
+                        "attack"
+                    ],
+                    [
+                        "S",
+                        "skywalker"
+                    ],
+                    [
+                        "D",
+                        "detection"
+                    ],
+                    [
+                        "W",
+                        "workshop"
+                    ],
+                    [
+                        "E",
+                        "wacky"
+                    ],
+                    [
+                        ".",
+                        "page 2"
+                    ],
+                    [
+                        "G",
+                        "mc tools"
+                    ]
+                ]
+            }
+        }
+    },
+    "cleanshot": {
+        "title": "SCREENSHOT",
+        "keys": [
+            [
+                "C",
+                "area"
+            ],
+            [
+                "A",
+                "annotate"
+            ],
+            [
+                "V",
+                "pin"
+            ],
+            [
+                "P",
+                "previous"
+            ],
+            [
+                "F",
+                "full"
+            ],
+            [
+                "W",
+                "window"
+            ],
+            [
+                "S",
+                "scroll"
+            ],
+            [
+                "T",
+                "OCR"
+            ],
+            [
+                "R",
+                "record"
+            ],
+            [
+                "H",
+                "history"
+            ]
+        ]
+    },
+    "window": {
+        "title": "WINDOW",
+        "keys": [
+            [
+                "H/J/K/L",
+                "focus"
+            ],
+            [
+                "\u21e7 H/J/K/L",
+                "move"
+            ],
+            [
+                "F",
+                "fullscreen"
+            ],
+            [
+                "B",
+                "balance"
+            ],
+            [
+                "E",
+                "layout"
+            ],
+            [
+                "1-9",
+                "workspace"
+            ],
+            [
+                "\u21e7 1-9",
+                "move to ws"
+            ],
+            [
+                "R",
+                "resize mode"
+            ]
+        ]
+    },
+    "menu": {
+        "title": "MENU BAR",
+        "keys": [
+            [
+                "C",
+                "CPU"
+            ],
+            [
+                "T",
+                "temp"
+            ],
+            [
+                "M",
+                "memory"
+            ],
+            [
+                "N",
+                "network"
+            ],
+            [
+                "D",
+                "disk"
+            ],
+            [
+                "B",
+                "battery"
+            ],
+            [
+                "V",
+                "VPN"
+            ],
+            [
+                "K",
+                "docker"
+            ],
+            [
+                "A",
+                "charge limit"
+            ],
+            [
+                "W",
+                "wifi toggle"
+            ]
+        ]
+    },
+    "resize": {
+        "title": "RESIZE",
+        "keys": [
+            [
+                "H/L",
+                "width \u2212/+"
+            ],
+            [
+                "J/K",
+                "height +/\u2212"
+            ],
+            [
+                "ESC",
+                "exit"
+            ]
+        ]
+    },
+    "repeat-500": {
+        "title": "REPEAT DELAY: 500 ms",
+        "keys": [
+            [
+                "\u25cf",
+                "500 slow"
+            ],
+            [
+                "\u25cb",
+                "250 medium"
+            ],
+            [
+                "\u25cb",
+                "180 fast"
+            ],
+            [
+                "\u21ea R",
+                "cycle"
+            ]
+        ]
+    },
+    "repeat-250": {
+        "title": "REPEAT DELAY: 250 ms",
+        "keys": [
+            [
+                "\u25cb",
+                "500 slow"
+            ],
+            [
+                "\u25cf",
+                "250 medium"
+            ],
+            [
+                "\u25cb",
+                "180 fast"
+            ],
+            [
+                "\u21ea R",
+                "cycle"
+            ]
+        ]
+    },
+    "repeat-180": {
+        "title": "REPEAT DELAY: 180 ms",
+        "keys": [
+            [
+                "\u25cb",
+                "500 slow"
+            ],
+            [
+                "\u25cb",
+                "250 medium"
+            ],
+            [
+                "\u25cf",
+                "180 fast"
+            ],
+            [
+                "\u21ea R",
+                "cycle"
+            ]
+        ]
+    },
+    "fade-on": {
+        "title": "BORDER FADE: ON",
+        "keys": [
+            [
+                "\u25cf",
+                "fade 150 ms"
+            ],
+            [
+                "\u25cb",
+                "instant"
+            ],
+            [
+                "\u21ea B",
+                "toggle"
+            ]
+        ]
+    },
+    "fade-off": {
+        "title": "BORDER FADE: OFF",
+        "keys": [
+            [
+                "\u25cb",
+                "fade 150 ms"
+            ],
+            [
+                "\u25cf",
+                "instant"
+            ],
+            [
+                "\u21ea B",
+                "toggle"
+            ]
+        ]
+    },
+    "wurst-attack": {
+        "title": "WURST \u00b7 ATTACK",
+        "keys": [
+            [
+                "A",
+                "ClickAura"
+            ],
+            [
+                "S",
+                "KillAura"
+            ],
+            [
+                "D",
+                "MultiAura"
+            ],
+            [
+                "W",
+                "ArrowDMG"
+            ],
+            [
+                "esc",
+                "cancel"
+            ]
+        ]
+    },
+    "wurst-sky": {
+        "title": "WURST \u00b7 SKYWALKER",
+        "keys": [
+            [
+                "W",
+                "Jesus"
+            ],
+            [
+                "A",
+                "ExtraElytra"
+            ],
+            [
+                "S",
+                "Jetpack"
+            ],
+            [
+                "D",
+                "NoFall"
+            ],
+            [
+                "esc",
+                "cancel"
+            ]
+        ]
+    },
+    "wurst-detect": {
+        "title": "WURST \u00b7 DETECTION",
+        "keys": [
+            [
+                "W",
+                "X-Ray"
+            ],
+            [
+                "A",
+                "PlayerESP"
+            ],
+            [
+                "S",
+                "MobESP"
+            ],
+            [
+                "D",
+                "Fullbright"
+            ],
+            [
+                "esc",
+                "cancel"
+            ]
+        ]
+    },
+    "wurst-work": {
+        "title": "WURST \u00b7 WORKSHOP",
+        "keys": [
+            [
+                "W",
+                "FastBreak"
+            ],
+            [
+                "A",
+                "Tunneller"
+            ],
+            [
+                "S",
+                "ScaffoldWalk"
+            ],
+            [
+                "D",
+                "SpeedNuker"
+            ],
+            [
+                "Tab",
+                "Excavator"
+            ],
+            [
+                "esc",
+                "cancel"
+            ]
+        ]
+    },
+    "wurst-wacky": {
+        "title": "WURST \u00b7 WACKY",
+        "keys": [
+            [
+                "W",
+                "HeadRoll"
+            ],
+            [
+                "A",
+                "Derp"
+            ],
+            [
+                "S",
+                "MileyCyrus"
+            ],
+            [
+                "D",
+                "Headless"
+            ],
+            [
+                "esc",
+                "cancel"
+            ]
+        ]
+    }
+}
