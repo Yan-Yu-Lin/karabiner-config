@@ -22,17 +22,23 @@
                       :held    500}}
 
  :templates {:cleanshot "echo 'url cleanshot://%s' > /tmp/karabiner-hud.fifo ; echo 'hide' > /tmp/karabiner-hud.fifo"
-             :aero      "/usr/local/bin/aerospace %s"
-             :aero2     "/usr/local/bin/aerospace %s %s"
+             ;; NOTE: use the brew shim path — /usr/local/bin/aerospace is a
+             ;; version-pinned Caskroom symlink that breaks on every upgrade
+             :aero      "/opt/homebrew/bin/aerospace %s"
+             :aero2     "/opt/homebrew/bin/aerospace %s %s"
              :tmux      "/opt/homebrew/bin/tmux %s"
+             :mcx       "/Users/linyanyu/.local/bin/mcx %s"
              :kb        "echo '%s' > /tmp/karabiner-scripts.fifo &"
              :hud       "echo '%s' > /tmp/karabiner-hud.fifo &"
              :open      "echo 'url %s' > /tmp/karabiner-hud.fifo &"}
 
- :applications {:arc     ["^company\\.thebrowser\\.Browser$"]
-                :raycast ["^com\\.raycast\\.macos$"]
-                :ghostty ["^com\\.mitchellh\\.ghostty$"]
-                :cmux    ["^com\\.cmuxterm\\.app$"]}
+ :applications {:arc       ["^company\\.thebrowser\\.Browser$"]
+                :raycast   ["^com\\.raycast\\.macos$"]
+                :ghostty   ["^com\\.mitchellh\\.ghostty$"]
+                :cmux      ["^com\\.cmuxterm\\.app$"]
+                ;; Prism's Minecraft JVM has no bundle id on this Mac, so match its executable path too.
+                :minecraft [:identifiers "^org\\.prismlauncher\\.PrismLauncher$"
+                            :paths "^/Users/linyanyu/Library/Application Support/PrismLauncher/java/.*/bin/java$"]}
  :input-sources {:zhuyin {:input_source_id "^com\\.apple\\.inputmethod\\.TCIM$"
                           :input_mode_id "^com\\.apple\\.inputmethod\\.TCIM\\.Zhuyin$"}}
  :layers {}
@@ -52,6 +58,9 @@
                                ["cleanshot-mode" 0]
                                ["window-mode" 0]
                                ["resize-mode" 0]
+                               ["minecraft-mode" 0]
+                               ["mcbridge-page2" 0]
+                               ["mcbridge-page2-group-1" 0]
                                [:hud "show caps"]]
                   nil
                   {:afterup [["caps-mode" 0] [:hud "hide caps"]]
@@ -124,9 +133,47 @@
                  [:l [:aero2 "resize" "width +50"]  [:resize-mode]]
                  [:escape [["resize-mode" 0] [:hud "show window"]] [:resize-mode]]]}
 
+        ;; ===== MCBridge proof layer (Caps+G → one-shot, Minecraft/Prism only) =====
+        ;; Hold Caps, tap G, release Caps, then: F=.fly, I=inventory, S=status.
+        {:des "Minecraft mode - MCBridge proof bindings"
+         :rules [[:f [[:mcx "chat .fly"]                 ["minecraft-mode" 0]] [:minecraft ["minecraft-mode" 1] ["caps-mode" 0]]]
+                 [:i [{:shell "/bin/bash -c 'exec 3<>/dev/tcp/127.0.0.1/25580; printf \"GET /k/key.inventory/tap HTTP/1.0\\r\\n\\r\\n\" >&3'"}
+                      ["minecraft-mode" 0]] [:minecraft ["minecraft-mode" 1] ["caps-mode" 0]]]
+                 [:s [[:mcx "status"]                    ["minecraft-mode" 0]] [:minecraft ["minecraft-mode" 1] ["caps-mode" 0]]]
+                 [:escape ["minecraft-mode" 0] [:minecraft ["minecraft-mode" 1]]]]}
+
         ;; ===== Right Command → Hyper (Cmd+Ctrl+Opt) =====
         {:des "Right Command → Hyper (Cmd+Ctrl+Opt)"
          :rules [[:##right_command :!TOleft_command]]}
+
+        ;; ===== Vim navigation layer (migrated from BTT) =====
+        ;; Left Option held = movement. Karabiner gives key-repeat + rollover
+        ;; for free (both were broken in BTT).
+        ;;   h/j/k/l = arrows   w/b = word fwd/back
+        ;;   a = end of line    i = start of line
+        ;;   g = top of doc     shift+g = bottom of doc (vim gg / G)
+        {:des "Vim nav - Option + h/j/k/l/w/b/a/i/g"
+         :rules [[:!Oh :left_arrow]
+                 [:!Oj :down_arrow]
+                 [:!Ok :up_arrow]
+                 [:!Ol :right_arrow]
+                 [:!Ow :!Oright_arrow]
+                 [:!Ob :!Oleft_arrow]
+                 [:!Oa :!Cright_arrow]
+                 [:!Oi :!Cleft_arrow]
+                 [:!Og :!Cup_arrow]]}
+
+        ;; Option+Shift = same movement but selecting (except g = bottom of doc)
+        {:des "Vim select - Option+Shift + h/j/k/l/w/b/a/i, g = doc bottom"
+         :rules [[:!OSh :!Sleft_arrow]
+                 [:!OSj :!Sdown_arrow]
+                 [:!OSk :!Sup_arrow]
+                 [:!OSl :!Sright_arrow]
+                 [:!OSw :!OSright_arrow]
+                 [:!OSb :!OSleft_arrow]
+                 [:!OSa :!CSright_arrow]
+                 [:!OSi :!CSleft_arrow]
+                 [:!OSg :!Cdown_arrow]]}
 
         ;; ===== Per-app: Arc Browser =====
         {:des "Arc - caps+j/k spaces, caps+s sort tabs, cmd+\\ toggle pinned"
@@ -177,10 +224,159 @@
          :rules [;; Hyper+A → Raycast Arc search: swallow when NOT in Arc
                  [:!CTOa :vk_none [:!arc :!raycast]]]}
 
+        ;; ===== Hyper + O/U: instant macOS Space switch (migrated from BTT) =====
+        ;; spacenav posts a synthetic max-velocity DockSwipe gesture (same private
+        ;; mechanism BTT uses) — Dock commits the switch in ~1 frame, no animation.
+        ;; Runs via the KarabinerScripts daemon (inherits its Accessibility).
+        ;; Binary: ~/.local/bin/spacenav, source: ~/karabiner-config/spacenav/
+        ;; :repeat false = fire once per physical press (like BTT did) — holding
+        ;; won't machine-gun gestures, and every real tap lands with no throttle.
+        ;; spacenav runs as a resident daemon (com.user.spacenav LaunchAgent,
+        ;; log /tmp/spacenav.log) — echo straight into its FIFO, no process
+        ;; spawn per keypress (~15ms keypress→switch, BTT-class latency).
+        {:des "Hyper+O/U - space right/left without animation (spacenav daemon)"
+         :rules [[:!CTOo {:shell "echo 'next' > /tmp/spacenav.fifo &" :repeat false}]
+                 [:!CTOu {:shell "echo 'prev' > /tmp/spacenav.fifo &" :repeat false}]]}
+
+        ;; ===== MCBridge FULL layer (generated, faithful to Arthur's layout) — mcctx-gated =====
+        ;; gameplay/screen/chat modes via mc_ctx_*; page2 = Caps+Period overflow. Delete these blocks + reset-vars to revert.
+        {:des "MCBridge gameplay - preserved physical layout"
+         :rules [
+          [{:pkey :button1} {:shell "/bin/bash -c 'printf \"H key.attack\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]] {:afterup {:shell "/bin/bash -c 'printf \"R key.attack\" >/dev/udp/127.0.0.1/25581'"}}]
+          [{:pkey :button2} {:shell "/bin/bash -c 'printf \"H key.use\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]] {:afterup {:shell "/bin/bash -c 'printf \"R key.use\" >/dev/udp/127.0.0.1/25581'"}}]
+          [:w {:shell "/bin/bash -c 'printf \"H key.forward\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]] {:afterup {:shell "/bin/bash -c 'printf \"R key.forward\" >/dev/udp/127.0.0.1/25581'"}}]
+          [:a {:shell "/bin/bash -c 'printf \"H key.left\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]] {:afterup {:shell "/bin/bash -c 'printf \"R key.left\" >/dev/udp/127.0.0.1/25581'"}}]
+          [:s {:shell "/bin/bash -c 'printf \"H key.back\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]] {:afterup {:shell "/bin/bash -c 'printf \"R key.back\" >/dev/udp/127.0.0.1/25581'"}}]
+          [:d {:shell "/bin/bash -c 'printf \"H key.right\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]] {:afterup {:shell "/bin/bash -c 'printf \"R key.right\" >/dev/udp/127.0.0.1/25581'"}}]
+          [:spacebar {:shell "/bin/bash -c 'printf \"H key.jump\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]] {:afterup {:shell "/bin/bash -c 'printf \"R key.jump\" >/dev/udp/127.0.0.1/25581'"}}]
+          [:left_shift {:shell "/bin/bash -c 'printf \"H key.sneak\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]] {:afterup {:shell "/bin/bash -c 'printf \"R key.sneak\" >/dev/udp/127.0.0.1/25581'"}}]
+          [:t {:shell "/bin/bash -c 'printf \"T key.drop\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
+          [:left_option {:shell "/bin/bash -c 'printf \"T key.inventory\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
+          [:equal_sign {:shell "/bin/bash -c 'printf \"H key.playerlist\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]] {:afterup {:shell "/bin/bash -c 'printf \"R key.playerlist\" >/dev/udp/127.0.0.1/25581'"}}]
+          [{:pkey :button3} {:shell "/bin/bash -c 'printf \"T key.pickItem\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
+          [:slash {:shell "/bin/bash -c 'printf \"T key.command\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
+          [:f2 {:shell "/bin/bash -c 'printf \"T key.screenshot\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
+          [:grave_accent_and_tilde {:shell "/bin/bash -c 'printf \"T key.togglePerspective\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
+          [:f11 {:shell "/bin/bash -c 'printf \"T key.fullscreen\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
+          [:f {:shell "/bin/bash -c 'printf \"T key.swapOffhand\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
+          [:l {:shell "/bin/bash -c 'printf \"T key.advancements\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
+          [:tab {:shell "/bin/bash -c 'printf \"T key.hotbar.1\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
+          [:q {:shell "/bin/bash -c 'printf \"T key.hotbar.2\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
+          [:e {:shell "/bin/bash -c 'printf \"T key.hotbar.3\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
+          [:r {:shell "/bin/bash -c 'printf \"T key.hotbar.4\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
+          [:z {:shell "/bin/bash -c 'printf \"T key.hotbar.5\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
+          [:x {:shell "/bin/bash -c 'printf \"T key.hotbar.6\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
+          [:c {:shell "/bin/bash -c 'printf \"T key.hotbar.7\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
+          [{:pkey :button5} {:shell "/bin/bash -c 'printf \"T key.hotbar.8\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
+          [{:pkey :button4} {:shell "/bin/bash -c 'printf \"T key.hotbar.9\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
+          [:v {:shell "/bin/bash -c 'printf \"T key.freecam.toggle\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
+          [:m {:shell "/bin/bash -c 'printf \"T key.antique_atlas.open\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
+          [:g {:shell "/bin/bash -c 'printf \"T key.backslot.switch_backslot\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
+          [:left_control {:shell "/bin/bash -c 'printf \"T keybinds.combatroll.roll\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
+          [:j {:shell "/bin/bash -c 'printf \"T key.crawl\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
+          [:open_bracket {:shell "/bin/bash -c 'printf \"T key.fbp.open_settings\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
+          [:f6 {:shell "/bin/bash -c 'printf \"T key.firstperson.toggle\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
+          [:1 {:shell "/bin/bash -c 'printf \"T key.immersive_aircraft.dismount\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
+          [:b {:shell "/bin/bash -c 'printf \"T key.inmis.open_backpack\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
+          [:k {:shell "/bin/bash -c 'printf \"T key.levelz.openskillscreen\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
+          [:y {:shell "/bin/bash -c 'printf \"T key.niftycarts.action\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
+          [:f4 {:shell "/bin/bash -c 'printf \"T nimble.keybind.frontView\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
+          [:f10 {:shell "/bin/bash -c 'printf \"T key.presencefootsteps.settings\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
+          [:h {:shell "/bin/bash -c 'printf \"T desc.seasonhud.keybind.options\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
+          [:n {:shell "/bin/bash -c 'printf \"T key.smallships.ship_sail\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
+        ]}
+
+        {:des "MCBridge screen - hovered slot actions (Arthur layout); mouse passes through"
+         :rules [
+          [:tab {:shell "/bin/bash -c 'printf \"G /gui/swap/1\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_screen" 1] ["caps-mode" 0]]]
+          [:q {:shell "/bin/bash -c 'printf \"G /gui/swap/2\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_screen" 1] ["caps-mode" 0]]]
+          [:e {:shell "/bin/bash -c 'printf \"G /gui/swap/3\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_screen" 1] ["caps-mode" 0]]]
+          [:r {:shell "/bin/bash -c 'printf \"G /gui/swap/4\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_screen" 1] ["caps-mode" 0]]]
+          [:z {:shell "/bin/bash -c 'printf \"G /gui/swap/5\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_screen" 1] ["caps-mode" 0]]]
+          [:x {:shell "/bin/bash -c 'printf \"G /gui/swap/6\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_screen" 1] ["caps-mode" 0]]]
+          [:c {:shell "/bin/bash -c 'printf \"G /gui/swap/7\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_screen" 1] ["caps-mode" 0]]]
+          [{:pkey :button5} {:shell "/bin/bash -c 'printf \"G /gui/swap/8\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_screen" 1] ["caps-mode" 0]]]
+          [{:pkey :button4} {:shell "/bin/bash -c 'printf \"G /gui/swap/9\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_screen" 1] ["caps-mode" 0]]]
+          [:spacebar {:shell "/bin/bash -c 'printf \"G /gui/quickmove\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_screen" 1] ["caps-mode" 0]]]
+          [:t {:shell "/bin/bash -c 'printf \"G /gui/drop\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_screen" 1] ["caps-mode" 0]]]
+          [:escape {:shell "/bin/bash -c 'printf \"G /gui/close\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_screen" 1] ["caps-mode" 0]]]
+]}
+
+        {:des "MCBridge chat - raw keyboard passthrough"
+         :rules []}
+
+        {:des "MCBridge page 2 leader (gameplay Caps+period)"
+         :rules [[:period ["mcbridge-page2" 1] [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 1]]]]}
+
+        {:des "MCBridge gameplay page 2 actions"
+         :rules [
+          [:a [{:shell "/bin/bash -c 'printf \"H key.sprint\" >/dev/udp/127.0.0.1/25581'"} ["mcbridge-page2" 0]] [:minecraft ["mc_ctx_gameplay" 1] ["mcbridge-page2" 1] ["caps-mode" 0]] {:afterup {:shell "/bin/bash -c 'printf \"R key.sprint\" >/dev/udp/127.0.0.1/25581'"}}]
+          [:b [{:shell "/bin/bash -c 'printf \"T key.chat\" >/dev/udp/127.0.0.1/25581'"} ["mcbridge-page2" 0]] [:minecraft ["mc_ctx_gameplay" 1] ["mcbridge-page2" 1] ["caps-mode" 0]]]
+          [:c [{:shell "/bin/bash -c 'printf \"T key.socialInteractions\" >/dev/udp/127.0.0.1/25581'"} ["mcbridge-page2" 0]] [:minecraft ["mc_ctx_gameplay" 1] ["mcbridge-page2" 1] ["caps-mode" 0]]]
+          [:d [{:shell "/bin/bash -c 'printf \"T key.smoothCamera\" >/dev/udp/127.0.0.1/25581'"} ["mcbridge-page2" 0]] [:minecraft ["mc_ctx_gameplay" 1] ["mcbridge-page2" 1] ["caps-mode" 0]]]
+          [:e [{:shell "/bin/bash -c 'printf \"T key.spectatorOutlines\" >/dev/udp/127.0.0.1/25581'"} ["mcbridge-page2" 0]] [:minecraft ["mc_ctx_gameplay" 1] ["mcbridge-page2" 1] ["caps-mode" 0]]]
+          [:f [{:shell "/bin/bash -c 'printf \"T key.saveToolbarActivator\" >/dev/udp/127.0.0.1/25581'"} ["mcbridge-page2" 0]] [:minecraft ["mc_ctx_gameplay" 1] ["mcbridge-page2" 1] ["caps-mode" 0]]]
+          [:g [{:shell "/bin/bash -c 'printf \"T key.loadToolbarActivator\" >/dev/udp/127.0.0.1/25581'"} ["mcbridge-page2" 0]] [:minecraft ["mc_ctx_gameplay" 1] ["mcbridge-page2" 1] ["caps-mode" 0]]]
+          [:h [{:shell "/bin/bash -c 'printf \"H key.valkyrienskies.ship_down\" >/dev/udp/127.0.0.1/25581'"} ["mcbridge-page2" 0]] [:minecraft ["mc_ctx_gameplay" 1] ["mcbridge-page2" 1] ["caps-mode" 0]] {:afterup {:shell "/bin/bash -c 'printf \"R key.valkyrienskies.ship_down\" >/dev/udp/127.0.0.1/25581'"}}]
+          [:i [{:shell "/bin/bash -c 'printf \"T key.valkyrienskies.ship_cruise\" >/dev/udp/127.0.0.1/25581'"} ["mcbridge-page2" 0]] [:minecraft ["mc_ctx_gameplay" 1] ["mcbridge-page2" 1] ["caps-mode" 0]]]
+          [:j [{:shell "/bin/bash -c 'printf \"H key.adventurez.dragonflydown\" >/dev/udp/127.0.0.1/25581'"} ["mcbridge-page2" 0]] [:minecraft ["mc_ctx_gameplay" 1] ["mcbridge-page2" 1] ["caps-mode" 0]] {:afterup {:shell "/bin/bash -c 'printf \"R key.adventurez.dragonflydown\" >/dev/udp/127.0.0.1/25581'"}}]
+          [:k [{:shell "/bin/bash -c 'printf \"H key.adventurez.dragonfirebreath\" >/dev/udp/127.0.0.1/25581'"} ["mcbridge-page2" 0]] [:minecraft ["mc_ctx_gameplay" 1] ["mcbridge-page2" 1] ["caps-mode" 0]] {:afterup {:shell "/bin/bash -c 'printf \"R key.adventurez.dragonfirebreath\" >/dev/udp/127.0.0.1/25581'"}}]
+          [:l [{:shell "/bin/bash -c 'printf \"T key.backslot.switch_beltslot\" >/dev/udp/127.0.0.1/25581'"} ["mcbridge-page2" 0]] [:minecraft ["mc_ctx_gameplay" 1] ["mcbridge-page2" 1] ["caps-mode" 0]]]
+          [:m [{:shell "/bin/bash -c 'printf \"T keybinds.bettercombat.feint\" >/dev/udp/127.0.0.1/25581'"} ["mcbridge-page2" 0]] [:minecraft ["mc_ctx_gameplay" 1] ["mcbridge-page2" 1] ["caps-mode" 0]]]
+          [:n [{:shell "/bin/bash -c 'printf \"T keybinds.bettercombat.toggle_mine_with_weapons\" >/dev/udp/127.0.0.1/25581'"} ["mcbridge-page2" 0]] [:minecraft ["mc_ctx_gameplay" 1] ["mcbridge-page2" 1] ["caps-mode" 0]]]
+          [:o [{:shell "/bin/bash -c 'printf \"T key.entityculling.toggle\" >/dev/udp/127.0.0.1/25581'"} ["mcbridge-page2" 0]] [:minecraft ["mc_ctx_gameplay" 1] ["mcbridge-page2" 1] ["caps-mode" 0]]]
+          [:p [{:shell "/bin/bash -c 'printf \"T key.exposure.camera_controls\" >/dev/udp/127.0.0.1/25581'"} ["mcbridge-page2" 0]] [:minecraft ["mc_ctx_gameplay" 1] ["mcbridge-page2" 1] ["caps-mode" 0]]]
+          [:q [{:shell "/bin/bash -c 'printf \"T key.fbp.toggle_mod\" >/dev/udp/127.0.0.1/25581'"} ["mcbridge-page2" 0]] [:minecraft ["mc_ctx_gameplay" 1] ["mcbridge-page2" 1] ["caps-mode" 0]]]
+          [:r [{:shell "/bin/bash -c 'printf \"T key.fbp.toggle_animations\" >/dev/udp/127.0.0.1/25581'"} ["mcbridge-page2" 0]] [:minecraft ["mc_ctx_gameplay" 1] ["mcbridge-page2" 1] ["caps-mode" 0]]]
+          [:s [{:shell "/bin/bash -c 'printf \"T key.fbp.freeze_particles\" >/dev/udp/127.0.0.1/25581'"} ["mcbridge-page2" 0]] [:minecraft ["mc_ctx_gameplay" 1] ["mcbridge-page2" 1] ["caps-mode" 0]]]
+          [:t [{:shell "/bin/bash -c 'printf \"T key.fbp.kill_particles\" >/dev/udp/127.0.0.1/25581'"} ["mcbridge-page2" 0]] [:minecraft ["mc_ctx_gameplay" 1] ["mcbridge-page2" 1] ["caps-mode" 0]]]
+          [:u [{:shell "/bin/bash -c 'printf \"T key.fbp.add_to_blacklist\" >/dev/udp/127.0.0.1/25581'"} ["mcbridge-page2" 0]] [:minecraft ["mc_ctx_gameplay" 1] ["mcbridge-page2" 1] ["caps-mode" 0]]]
+          [:v [{:shell "/bin/bash -c 'printf \"T key.fbp.reload_config\" >/dev/udp/127.0.0.1/25581'"} ["mcbridge-page2" 0]] [:minecraft ["mc_ctx_gameplay" 1] ["mcbridge-page2" 1] ["caps-mode" 0]]]
+          [:w [{:shell "/bin/bash -c 'printf \"T key.freecam.playerControl\" >/dev/udp/127.0.0.1/25581'"} ["mcbridge-page2" 0]] [:minecraft ["mc_ctx_gameplay" 1] ["mcbridge-page2" 1] ["caps-mode" 0]]]
+          [:x [{:shell "/bin/bash -c 'printf \"T key.freecam.tripodReset\" >/dev/udp/127.0.0.1/25581'"} ["mcbridge-page2" 0]] [:minecraft ["mc_ctx_gameplay" 1] ["mcbridge-page2" 1] ["caps-mode" 0]]]
+          [:y [{:shell "/bin/bash -c 'printf \"T key.freecam.configGui\" >/dev/udp/127.0.0.1/25581'"} ["mcbridge-page2" 0]] [:minecraft ["mc_ctx_gameplay" 1] ["mcbridge-page2" 1] ["caps-mode" 0]]]
+          [:z [{:shell "/bin/bash -c 'printf \"H key.immersive_aircraft.multi_control_left\" >/dev/udp/127.0.0.1/25581'"} ["mcbridge-page2" 0]] [:minecraft ["mc_ctx_gameplay" 1] ["mcbridge-page2" 1] ["caps-mode" 0]] {:afterup {:shell "/bin/bash -c 'printf \"R key.immersive_aircraft.multi_control_left\" >/dev/udp/127.0.0.1/25581'"}}]
+          [:comma [{:shell "/bin/bash -c 'printf \"H key.immersive_aircraft.multi_control_right\" >/dev/udp/127.0.0.1/25581'"} ["mcbridge-page2" 0]] [:minecraft ["mc_ctx_gameplay" 1] ["mcbridge-page2" 1] ["caps-mode" 0]] {:afterup {:shell "/bin/bash -c 'printf \"R key.immersive_aircraft.multi_control_right\" >/dev/udp/127.0.0.1/25581'"}}]
+          [:semicolon [{:shell "/bin/bash -c 'printf \"H key.immersive_aircraft.multi_control_forward\" >/dev/udp/127.0.0.1/25581'"} ["mcbridge-page2" 0]] [:minecraft ["mc_ctx_gameplay" 1] ["mcbridge-page2" 1] ["caps-mode" 0]] {:afterup {:shell "/bin/bash -c 'printf \"R key.immersive_aircraft.multi_control_forward\" >/dev/udp/127.0.0.1/25581'"}}]
+          [:quote [{:shell "/bin/bash -c 'printf \"H key.immersive_aircraft.multi_control_backward\" >/dev/udp/127.0.0.1/25581'"} ["mcbridge-page2" 0]] [:minecraft ["mc_ctx_gameplay" 1] ["mcbridge-page2" 1] ["caps-mode" 0]] {:afterup {:shell "/bin/bash -c 'printf \"R key.immersive_aircraft.multi_control_backward\" >/dev/udp/127.0.0.1/25581'"}}]
+          [:open_bracket [{:shell "/bin/bash -c 'printf \"H key.immersive_aircraft.multi_control_up\" >/dev/udp/127.0.0.1/25581'"} ["mcbridge-page2" 0]] [:minecraft ["mc_ctx_gameplay" 1] ["mcbridge-page2" 1] ["caps-mode" 0]] {:afterup {:shell "/bin/bash -c 'printf \"R key.immersive_aircraft.multi_control_up\" >/dev/udp/127.0.0.1/25581'"}}]
+          [:close_bracket [{:shell "/bin/bash -c 'printf \"H key.immersive_aircraft.multi_control_down\" >/dev/udp/127.0.0.1/25581'"} ["mcbridge-page2" 0]] [:minecraft ["mc_ctx_gameplay" 1] ["mcbridge-page2" 1] ["caps-mode" 0]] {:afterup {:shell "/bin/bash -c 'printf \"R key.immersive_aircraft.multi_control_down\" >/dev/udp/127.0.0.1/25581'"}}]
+          [:backslash [{:shell "/bin/bash -c 'printf \"H key.immersive_aircraft.multi_control_pull\" >/dev/udp/127.0.0.1/25581'"} ["mcbridge-page2" 0]] [:minecraft ["mc_ctx_gameplay" 1] ["mcbridge-page2" 1] ["caps-mode" 0]] {:afterup {:shell "/bin/bash -c 'printf \"R key.immersive_aircraft.multi_control_pull\" >/dev/udp/127.0.0.1/25581'"}}]
+          [:grave_accent_and_tilde [{:shell "/bin/bash -c 'printf \"H key.immersive_aircraft.multi_control_push\" >/dev/udp/127.0.0.1/25581'"} ["mcbridge-page2" 0]] [:minecraft ["mc_ctx_gameplay" 1] ["mcbridge-page2" 1] ["caps-mode" 0]] {:afterup {:shell "/bin/bash -c 'printf \"R key.immersive_aircraft.multi_control_push\" >/dev/udp/127.0.0.1/25581'"}}]
+          [:1 [["mcbridge-page2-group-1" 1] ["mcbridge-page2" 0]] [:minecraft ["mc_ctx_gameplay" 1] ["mcbridge-page2" 1] ["caps-mode" 0]]]
+        ]}
+
+        {:des "MCBridge gameplay page 2 group 1"
+         :rules [
+          [:a [{:shell "/bin/bash -c 'printf \"H key.immersive_aircraft.multi_use\" >/dev/udp/127.0.0.1/25581'"} ["mcbridge-page2-group-1" 0]] [:minecraft ["mc_ctx_gameplay" 1] ["mcbridge-page2-group-1" 1] ["caps-mode" 0]] {:afterup {:shell "/bin/bash -c 'printf \"R key.immersive_aircraft.multi_use\" >/dev/udp/127.0.0.1/25581'"}}]
+          [:b [{:shell "/bin/bash -c 'printf \"H key.immersive_aircraft.boost\" >/dev/udp/127.0.0.1/25581'"} ["mcbridge-page2-group-1" 0]] [:minecraft ["mc_ctx_gameplay" 1] ["mcbridge-page2-group-1" 1] ["caps-mode" 0]] {:afterup {:shell "/bin/bash -c 'printf \"R key.immersive_aircraft.boost\" >/dev/udp/127.0.0.1/25581'"}}]
+          [:c [{:shell "/bin/bash -c 'printf \"T key.modmenu.open_menu\" >/dev/udp/127.0.0.1/25581'"} ["mcbridge-page2-group-1" 0]] [:minecraft ["mc_ctx_gameplay" 1] ["mcbridge-page2-group-1" 1] ["caps-mode" 0]]]
+          [:d [{:shell "/bin/bash -c 'printf \"H key.niftycarts.slow\" >/dev/udp/127.0.0.1/25581'"} ["mcbridge-page2-group-1" 0]] [:minecraft ["mc_ctx_gameplay" 1] ["mcbridge-page2-group-1" 1] ["caps-mode" 0]] {:afterup {:shell "/bin/bash -c 'printf \"R key.niftycarts.slow\" >/dev/udp/127.0.0.1/25581'"}}]
+          [:e [{:shell "/bin/bash -c 'printf \"T key.presencefootsteps.toggle\" >/dev/udp/127.0.0.1/25581'"} ["mcbridge-page2-group-1" 0]] [:minecraft ["mc_ctx_gameplay" 1] ["mcbridge-page2-group-1" 1] ["caps-mode" 0]]]
+          [:f [{:shell "/bin/bash -c 'printf \"T seamless_loading_screen.keybind.config\" >/dev/udp/127.0.0.1/25581'"} ["mcbridge-page2-group-1" 0]] [:minecraft ["mc_ctx_gameplay" 1] ["mcbridge-page2-group-1" 1] ["caps-mode" 0]]]
+          [:g [{:shell "/bin/bash -c 'printf \"T tcdcommons.key.refresh_current_screen\" >/dev/udp/127.0.0.1/25581'"} ["mcbridge-page2-group-1" 0]] [:minecraft ["mc_ctx_gameplay" 1] ["mcbridge-page2-group-1" 1] ["caps-mode" 0]]]
+          [:h [{:shell "/bin/bash -c 'printf \"T treechop.key.toggle_chopping\" >/dev/udp/127.0.0.1/25581'"} ["mcbridge-page2-group-1" 0]] [:minecraft ["mc_ctx_gameplay" 1] ["mcbridge-page2-group-1" 1] ["caps-mode" 0]]]
+          [:i [{:shell "/bin/bash -c 'printf \"T treechop.key.toggle_felling\" >/dev/udp/127.0.0.1/25581'"} ["mcbridge-page2-group-1" 0]] [:minecraft ["mc_ctx_gameplay" 1] ["mcbridge-page2-group-1" 1] ["caps-mode" 0]]]
+          [:j [{:shell "/bin/bash -c 'printf \"T treechop.key.cycle_sneak_behavior\" >/dev/udp/127.0.0.1/25581'"} ["mcbridge-page2-group-1" 0]] [:minecraft ["mc_ctx_gameplay" 1] ["mcbridge-page2-group-1" 1] ["caps-mode" 0]]]
+          [:k [{:shell "/bin/bash -c 'printf \"T treechop.key.open_settings_overlay\" >/dev/udp/127.0.0.1/25581'"} ["mcbridge-page2-group-1" 0]] [:minecraft ["mc_ctx_gameplay" 1] ["mcbridge-page2-group-1" 1] ["caps-mode" 0]]]
+          [:l [{:shell "/bin/bash -c 'printf \"T iris.keybind.reload\" >/dev/udp/127.0.0.1/25581'"} ["mcbridge-page2-group-1" 0]] [:minecraft ["mc_ctx_gameplay" 1] ["mcbridge-page2-group-1" 1] ["caps-mode" 0]]]
+          [:m [{:shell "/bin/bash -c 'printf \"T iris.keybind.toggleShaders\" >/dev/udp/127.0.0.1/25581'"} ["mcbridge-page2-group-1" 0]] [:minecraft ["mc_ctx_gameplay" 1] ["mcbridge-page2-group-1" 1] ["caps-mode" 0]]]
+          [:n [{:shell "/bin/bash -c 'printf \"T iris.keybind.shaderPackSelection\" >/dev/udp/127.0.0.1/25581'"} ["mcbridge-page2-group-1" 0]] [:minecraft ["mc_ctx_gameplay" 1] ["mcbridge-page2-group-1" 1] ["caps-mode" 0]]]
+          [:o [{:shell "/bin/bash -c 'printf \"T iris.keybind.wireframe\" >/dev/udp/127.0.0.1/25581'"} ["mcbridge-page2-group-1" 0]] [:minecraft ["mc_ctx_gameplay" 1] ["mcbridge-page2-group-1" 1] ["caps-mode" 0]]]
+        ]}
+
+        ;; 90/90 unbound keybindings assigned.
+
         ;; ===== Caps Lock layer: entry points to sub-layers =====
         {:des "Caps mode - sub-layer entries"
          :rules [;; CleanShot: one-shot (tap c, release)
                  [:c [["cleanshot-mode" 1] [:hud "show cleanshot"]] ["caps-mode" 1]]
+                 ;; R: cycle key-repeat delay 500/250/180ms (script shows HUD)
+                 [:r "/Users/linyanyu/karabiner-config/scripts/toggle-key-repeat.sh" ["caps-mode" 1]]
+                 ;; B: toggle JankyBorders fade animation on/off (script shows HUD)
+                 [:b "/Users/linyanyu/karabiner-config/scripts/toggle-border-fade.sh" ["caps-mode" 1]]
+                 ;; Minecraft: one-shot proof layer, app-gated to Prism/Minecraft JVM
+                 [:g ["minecraft-mode" 1] [:minecraft ["caps-mode" 1]]]
                  ;; Window: hold-based (HOLD w, release w to exit)
                  [:w [["window-mode" 1] [:hud "show window"]] ["caps-mode" 1]
                   {:afterup [["window-mode" 0] ["resize-mode" 0] [:hud "hide"]]}]]}]}
