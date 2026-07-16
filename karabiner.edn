@@ -242,7 +242,11 @@
                  [:s [["wurst-sky" 1] [:hud "show wurst-sky"]]    [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 1]]]
                  [:d [["wurst-detect" 1] [:hud "show wurst-detect"]] [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 1]]]
                  [:w [["wurst-work" 1] [:hud "show wurst-work"]]   [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 1]]]
-                 [:e [["wurst-wacky" 1] [:hud "show wurst-wacky"]]  [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 1]]]]}
+                 [:e [["wurst-wacky" 1] [:hud "show wurst-wacky"]]  [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 1]]]
+                 ;; Caps+H (Hurt): chained self-damage via the mcbridge Wurst path. .damage caps at
+                 ;; 7 half-hearts per call, so fire it twice for 14 (>max single hit). Edit the loop
+                 ;; range (1 2 -> 1 2 3 …) to change how many 7-damage hits one press applies.
+                 [:h {:shell "/bin/bash -c 'for i in 1 2; do printf \"W damage 7\" >/dev/udp/127.0.0.1/25581; sleep 0.1; done'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 1]]]]}
 
         {:des "Wurst tree - attack (Caps+A then key)"
          :rules [[:a [{:shell "/bin/bash -c 'printf \"W t clickaura\" >/dev/udp/127.0.0.1/25581; echo hide > /tmp/karabiner-hud.fifo'"} ["wurst-attack" 0]] [:minecraft ["wurst-attack" 1] ["caps-mode" 0]]]
