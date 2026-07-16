@@ -300,7 +300,7 @@
           [:x {:shell "/bin/bash -c 'printf \"T key.hotbar.6\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
           [:c {:shell "/bin/bash -c 'printf \"T key.hotbar.7\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
           [:v {:shell "/bin/bash -c 'printf \"T key.freecam.toggle\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
-          [:m {:shell "/bin/bash -c 'printf \"T key.antique_atlas.open\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
+          [:m {:shell "/bin/bash -c 'printf \"T gui.xaero_open_map\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
           [:g {:shell "/bin/bash -c 'printf \"T key.backslot.switch_backslot\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
           [:left_control {:shell "/bin/bash -c 'printf \"T keybinds.combatroll.roll\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
           [:j {:shell "/bin/bash -c 'printf \"T key.crawl\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
