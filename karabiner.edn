@@ -29,13 +29,7 @@
              :tmux      "/opt/homebrew/bin/tmux %s"
              :kb        "echo '%s' > /tmp/karabiner-scripts.fifo &"
              :hud       "echo '%s' > /tmp/karabiner-hud.fifo &"
-             :open      "echo 'url %s' > /tmp/karabiner-hud.fifo &"
-             ;; MCBridge Wurst-fire + orb "ding" sound, and hide the HUD. %s = wurst cmd e.g. "t killaura".
-             :wfire     "/bin/bash -c 'printf \"W %s\" >/dev/udp/127.0.0.1/25581; echo hide > /tmp/karabiner-hud.fifo; afplay /Users/linyanyu/karabiner-config/sounds/mc-orb.aiff &'"
-             ;; Timer speed via Wurst setslider + orb sound. %s = speed value e.g. "1.2".
-             :wtimer    "/bin/bash -c 'printf \"W setslider Timer speed %s\" >/dev/udp/127.0.0.1/25581; afplay /Users/linyanyu/karabiner-config/sounds/mc-orb.aiff &'"
-             ;; Enter/navigate a modal layer: show its HUD + soft click sound. %s = hud mode name.
-             :mcenter   "/bin/bash -c 'printf \"show %s\" > /tmp/karabiner-hud.fifo; afplay /Users/linyanyu/karabiner-config/sounds/mc-click.aiff &'"}
+             :open      "echo 'url %s' > /tmp/karabiner-hud.fifo &"}
 
  :applications {:arc       ["^company\\.thebrowser\\.Browser$"]
                 :raycast   ["^com\\.raycast\\.macos$"]
@@ -56,8 +50,23 @@
                  [:!T7 :!T7 [:zhuyin]] [:!T8 :!T8 [:zhuyin]] [:!T9 :!T9 [:zhuyin]]]}
 
         ;; ===== Caps Lock: master key =====
-        ;; Hold = caps-mode, tap alone = escape
-        ;; Resets ALL sub-layer variables (universal escape hatch)
+        ;; Minecraft gets an F20 marker for Caps' lifetime so MCBridge can gate direct input.
+        ;; The second rule preserves the ordinary global Caps layer without leaking F20 to apps.
+        {:des "Caps Lock - Minecraft master layer + F20 input gate"
+         :rules [[:##caps_lock [["caps-mode" 1]
+                               ["cleanshot-mode" 0]
+                               ["window-mode" 0]
+                               ["resize-mode" 0]
+                               ["mcbridge-page2" 0]
+                               ["mcbridge-page2-group-1" 0]
+                               ;; Explicit repeat lets a refocused game reacquire a still-held gate.
+                               {:key :f20 :repeat true}
+                               [:hud "show caps"]]
+                  [:minecraft]
+                  {:afterup [["caps-mode" 0] [:hud "hide caps"]]
+                   :alone :escape}]]}
+
+        ;; Hold = caps-mode, tap alone = escape; reset all global sub-layers.
         {:des "Caps Lock - master layer + reset all modes"
          :rules [[:##caps_lock [["caps-mode" 1]
                                ["cleanshot-mode" 0]
@@ -65,12 +74,6 @@
                                ["resize-mode" 0]
                                ["mcbridge-page2" 0]
                                ["mcbridge-page2-group-1" 0]
-                               ["f-mode" 0]
-                               ["wurst-attack" 0]
-                               ["wurst-sky" 0]
-                               ["wurst-detect" 0]
-                               ["wurst-work" 0]
-                               ["wurst-wacky" 0]
                                [:hud "show caps"]]
                   nil
                   {:afterup [["caps-mode" 0] [:hud "hide caps"]]
@@ -240,130 +243,14 @@
          :rules [[:!CTOo {:shell "echo 'next' > /tmp/spacenav.fifo &" :repeat false}]
                  [:!CTOu {:shell "echo 'prev' > /tmp/spacenav.fifo &" :repeat false}]]}
 
-        ;; ===== Wurst hack tree (ported from Arthur's 1.21 F-modal; Caps+category, then action) =====
-        ;; Hold Caps, tap category (A/S/D/W/E), release Caps, tap action key -> hack toggles via
-        ;; mcx wurst (in-process CmdProcessor, never server chat). Escape cancels. Caps re-hold
-        ;; resets all categories (master escape hatch). One-shot: every action exits the mode.
-        ;; ===== F-tap modal leader for the Wurst tree (replaces the old Caps entries) =====
-        ;; Tap F in gameplay → f-mode. Karabiner swallows the next key so you don't move — this is
-        ;; why the old Timer-0.1 bullet-time is no longer needed. A/S/D/W/E pick a category, G swaps
-        ;; offhand (F's original function, now F+G), F-again/Caps/Escape cancels. click sound on nav.
-        {:des "Wurst F-leader + f-mode entries + Timer speeds + moved gameplay keys"
-         :rules [;; enter f-mode (F tapped in normal gameplay)
-                 [:f [["f-mode" 1] [:mcenter "wurst-f"]] [:minecraft ["mc_ctx_gameplay" 1] ["f-mode" 0] ["caps-mode" 0]]]
-                 ;; F again cancels f-mode
-                 [:f [["f-mode" 0] [:hud "hide"]] [:minecraft ["mc_ctx_gameplay" 1] ["f-mode" 1] ["caps-mode" 0]]]
-                 ;; f-mode category picks (keys eaten — no movement leaks)
-                 [:a [["wurst-attack" 1] ["f-mode" 0] [:mcenter "wurst-attack"]] [:minecraft ["mc_ctx_gameplay" 1] ["f-mode" 1] ["caps-mode" 0]]]
-                 [:s [["wurst-sky" 1]    ["f-mode" 0] [:mcenter "wurst-sky"]]    [:minecraft ["mc_ctx_gameplay" 1] ["f-mode" 1] ["caps-mode" 0]]]
-                 [:d [["wurst-detect" 1] ["f-mode" 0] [:mcenter "wurst-detect"]] [:minecraft ["mc_ctx_gameplay" 1] ["f-mode" 1] ["caps-mode" 0]]]
-                 [:w [["wurst-work" 1]   ["f-mode" 0] [:mcenter "wurst-work"]]   [:minecraft ["mc_ctx_gameplay" 1] ["f-mode" 1] ["caps-mode" 0]]]
-                 [:e [["wurst-wacky" 1]  ["f-mode" 0] [:mcenter "wurst-wacky"]]  [:minecraft ["mc_ctx_gameplay" 1] ["f-mode" 1] ["caps-mode" 0]]]
-                 ;; F+G — swap offhand (F's original function), then exit f-mode
-                 [:g [{:shell "/bin/bash -c 'printf \"T key.swapOffhand\" >/dev/udp/127.0.0.1/25581; afplay /Users/linyanyu/karabiner-config/sounds/mc-click.aiff &'"} ["f-mode" 0]] [:minecraft ["mc_ctx_gameplay" 1] ["f-mode" 1] ["caps-mode" 0]]]
-                 ;; F+T — toggle the Timer hack on/off (enable once so the 1-4 speeds take effect)
-                 [:t [[:wfire "t timer"] ["f-mode" 0]] [:minecraft ["mc_ctx_gameplay" 1] ["f-mode" 1] ["caps-mode" 0]]]
-                 ;; Escape cancels f-mode
-                 [:escape [["f-mode" 0] [:hud "hide"]] [:minecraft ["mc_ctx_gameplay" 1] ["f-mode" 1] ["caps-mode" 0]]]
-                 ;; Timer speed 1 / 1.2 / 2.5 / 5 — always available in gameplay
-                 [:1 [:wtimer "1"]   [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
-                 [:2 [:wtimer "1.2"] [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
-                 [:3 [:wtimer "2.5"] [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
-                 [:4 [:wtimer "5"]   [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
-                 ;; aircraft dismount moved off 1 (now a Timer key) → 0
-                 [:0 {:shell "/bin/bash -c 'printf \"T key.immersive_aircraft.dismount\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
-                 ;; Caps+H (Hurt): chained self-damage. Edit "1 2" range to change hit count.
-                 [:h {:shell "/bin/bash -c 'for i in 1 2; do printf \"W damage 7\" >/dev/udp/127.0.0.1/25581; sleep 0.1; done'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 1]]]]}
+        ;; ===== Minecraft Caps-only bridge actions =====
+        ;; Everything else below the F leader moved into MCBridge 0.7's render-thread modal.
+        {:des "Minecraft Caps+H self-damage (bridge-owned)"
+         :rules [[:h {:shell "/bin/bash -c 'for i in 1 2; do printf \"W damage 7\" >/dev/udp/127.0.0.1/25581; sleep 0.1; done'"}
+                  [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 1]]]]}
 
-        {:des "Wurst tree - attack (Caps+A then key)"
-         :rules [[:a [{:shell "/bin/bash -c 'printf \"W t clickaura\" >/dev/udp/127.0.0.1/25581; echo hide > /tmp/karabiner-hud.fifo; afplay /Users/linyanyu/karabiner-config/sounds/mc-orb.aiff &'"} ["wurst-attack" 0]] [:minecraft ["wurst-attack" 1] ["caps-mode" 0]]]
-                 [:s [{:shell "/bin/bash -c 'printf \"W t killaura\" >/dev/udp/127.0.0.1/25581; echo hide > /tmp/karabiner-hud.fifo; afplay /Users/linyanyu/karabiner-config/sounds/mc-orb.aiff &'"}  ["wurst-attack" 0]] [:minecraft ["wurst-attack" 1] ["caps-mode" 0]]]
-                 [:d [{:shell "/bin/bash -c 'printf \"W t multiaura\" >/dev/udp/127.0.0.1/25581; echo hide > /tmp/karabiner-hud.fifo; afplay /Users/linyanyu/karabiner-config/sounds/mc-orb.aiff &'"} ["wurst-attack" 0]] [:minecraft ["wurst-attack" 1] ["caps-mode" 0]]]
-                 [:w [{:shell "/bin/bash -c 'printf \"W t arrowdmg\" >/dev/udp/127.0.0.1/25581; echo hide > /tmp/karabiner-hud.fifo; afplay /Users/linyanyu/karabiner-config/sounds/mc-orb.aiff &'"}  ["wurst-attack" 0]] [:minecraft ["wurst-attack" 1] ["caps-mode" 0]]]
-                 [:escape [["wurst-attack" 0] [:hud "hide"]] [["wurst-attack" 1]]]]}
-
-        {:des "Wurst tree - skywalker (Caps+S then key)"
-         :rules [[:w [{:shell "/bin/bash -c 'printf \"W t jesus\" >/dev/udp/127.0.0.1/25581; echo hide > /tmp/karabiner-hud.fifo; afplay /Users/linyanyu/karabiner-config/sounds/mc-orb.aiff &'"}       ["wurst-sky" 0]] [:minecraft ["wurst-sky" 1] ["caps-mode" 0]]]
-                 [:a [{:shell "/bin/bash -c 'printf \"W t extraelytra\" >/dev/udp/127.0.0.1/25581; echo hide > /tmp/karabiner-hud.fifo; afplay /Users/linyanyu/karabiner-config/sounds/mc-orb.aiff &'"} ["wurst-sky" 0]] [:minecraft ["wurst-sky" 1] ["caps-mode" 0]]]
-                 [:s [{:shell "/bin/bash -c 'printf \"W t jetpack\" >/dev/udp/127.0.0.1/25581; echo hide > /tmp/karabiner-hud.fifo; afplay /Users/linyanyu/karabiner-config/sounds/mc-orb.aiff &'"}     ["wurst-sky" 0]] [:minecraft ["wurst-sky" 1] ["caps-mode" 0]]]
-                 [:d [{:shell "/bin/bash -c 'printf \"W t nofall\" >/dev/udp/127.0.0.1/25581; echo hide > /tmp/karabiner-hud.fifo; afplay /Users/linyanyu/karabiner-config/sounds/mc-orb.aiff &'"}      ["wurst-sky" 0]] [:minecraft ["wurst-sky" 1] ["caps-mode" 0]]]
-                 [:escape [["wurst-sky" 0] [:hud "hide"]] [["wurst-sky" 1]]]]}
-
-        {:des "Wurst tree - detection (Caps+D then key)"
-         :rules [[:w [{:shell "/bin/bash -c 'printf \"W t x-ray\" >/dev/udp/127.0.0.1/25581; echo hide > /tmp/karabiner-hud.fifo; afplay /Users/linyanyu/karabiner-config/sounds/mc-orb.aiff &'"}      ["wurst-detect" 0]] [:minecraft ["wurst-detect" 1] ["caps-mode" 0]]]
-                 [:a [{:shell "/bin/bash -c 'printf \"W t playeresp\" >/dev/udp/127.0.0.1/25581; echo hide > /tmp/karabiner-hud.fifo; afplay /Users/linyanyu/karabiner-config/sounds/mc-orb.aiff &'"}  ["wurst-detect" 0]] [:minecraft ["wurst-detect" 1] ["caps-mode" 0]]]
-                 [:s [{:shell "/bin/bash -c 'printf \"W t mobesp\" >/dev/udp/127.0.0.1/25581; echo hide > /tmp/karabiner-hud.fifo; afplay /Users/linyanyu/karabiner-config/sounds/mc-orb.aiff &'"}     ["wurst-detect" 0]] [:minecraft ["wurst-detect" 1] ["caps-mode" 0]]]
-                 [:d [{:shell "/bin/bash -c 'printf \"W t fullbright\" >/dev/udp/127.0.0.1/25581; echo hide > /tmp/karabiner-hud.fifo; afplay /Users/linyanyu/karabiner-config/sounds/mc-orb.aiff &'"} ["wurst-detect" 0]] [:minecraft ["wurst-detect" 1] ["caps-mode" 0]]]
-                 [:escape [["wurst-detect" 0] [:hud "hide"]] [["wurst-detect" 1]]]]}
-
-        {:des "Wurst tree - workshop (Caps+W then key)"
-         :rules [[:w [{:shell "/bin/bash -c 'printf \"W t fastbreak\" >/dev/udp/127.0.0.1/25581; echo hide > /tmp/karabiner-hud.fifo; afplay /Users/linyanyu/karabiner-config/sounds/mc-orb.aiff &'"}     ["wurst-work" 0]] [:minecraft ["wurst-work" 1] ["caps-mode" 0]]]
-                 [:a [{:shell "/bin/bash -c 'printf \"W t tunneller\" >/dev/udp/127.0.0.1/25581; echo hide > /tmp/karabiner-hud.fifo; afplay /Users/linyanyu/karabiner-config/sounds/mc-orb.aiff &'"}     ["wurst-work" 0]] [:minecraft ["wurst-work" 1] ["caps-mode" 0]]]
-                 [:s [{:shell "/bin/bash -c 'printf \"W t scaffoldwalk\" >/dev/udp/127.0.0.1/25581; echo hide > /tmp/karabiner-hud.fifo; afplay /Users/linyanyu/karabiner-config/sounds/mc-orb.aiff &'"}  ["wurst-work" 0]] [:minecraft ["wurst-work" 1] ["caps-mode" 0]]]
-                 [:d [{:shell "/bin/bash -c 'printf \"W t speednuker\" >/dev/udp/127.0.0.1/25581; echo hide > /tmp/karabiner-hud.fifo; afplay /Users/linyanyu/karabiner-config/sounds/mc-orb.aiff &'"}    ["wurst-work" 0]] [:minecraft ["wurst-work" 1] ["caps-mode" 0]]]
-                 [:tab [{:shell "/bin/bash -c 'printf \"W t excavator\" >/dev/udp/127.0.0.1/25581; echo hide > /tmp/karabiner-hud.fifo; afplay /Users/linyanyu/karabiner-config/sounds/mc-orb.aiff &'"}   ["wurst-work" 0]] [:minecraft ["wurst-work" 1] ["caps-mode" 0]]]
-                 [:escape [["wurst-work" 0] [:hud "hide"]] [["wurst-work" 1]]]]}
-
-        {:des "Wurst tree - wacky (Caps+E then key)"
-         :rules [[:w [{:shell "/bin/bash -c 'printf \"W t headroll\" >/dev/udp/127.0.0.1/25581; echo hide > /tmp/karabiner-hud.fifo; afplay /Users/linyanyu/karabiner-config/sounds/mc-orb.aiff &'"}   ["wurst-wacky" 0]] [:minecraft ["wurst-wacky" 1] ["caps-mode" 0]]]
-                 [:a [{:shell "/bin/bash -c 'printf \"W t derp\" >/dev/udp/127.0.0.1/25581; echo hide > /tmp/karabiner-hud.fifo; afplay /Users/linyanyu/karabiner-config/sounds/mc-orb.aiff &'"}       ["wurst-wacky" 0]] [:minecraft ["wurst-wacky" 1] ["caps-mode" 0]]]
-                 [:s [{:shell "/bin/bash -c 'printf \"W t mileycyrus\" >/dev/udp/127.0.0.1/25581; echo hide > /tmp/karabiner-hud.fifo; afplay /Users/linyanyu/karabiner-config/sounds/mc-orb.aiff &'"} ["wurst-wacky" 0]] [:minecraft ["wurst-wacky" 1] ["caps-mode" 0]]]
-                 [:d [{:shell "/bin/bash -c 'printf \"W t headless\" >/dev/udp/127.0.0.1/25581; echo hide > /tmp/karabiner-hud.fifo; afplay /Users/linyanyu/karabiner-config/sounds/mc-orb.aiff &'"}   ["wurst-wacky" 0]] [:minecraft ["wurst-wacky" 1] ["caps-mode" 0]]]
-                 [:escape [["wurst-wacky" 0] [:hud "hide"]] [["wurst-wacky" 1]]]]}
-
-        ;; ===== MCBridge FULL layer (generated, faithful to Arthur's layout) — mcctx-gated =====
-        ;; gameplay/screen/chat modes via mc_ctx_*; page2 = Caps+Period overflow. Delete these blocks + reset-vars to revert.
-        {:des "MCBridge gameplay - preserved physical layout"
-         :rules [
-          [:t {:shell "/bin/bash -c 'printf \"T key.drop\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
-          [:left_option {:shell "/bin/bash -c 'printf \"T key.inventory\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
-          [:slash {:shell "/bin/bash -c 'printf \"T key.command\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
-          [:f2 {:shell "/bin/bash -c 'printf \"T key.screenshot\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
-          [:grave_accent_and_tilde {:shell "/bin/bash -c 'printf \"T key.togglePerspective\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
-          [:f11 {:shell "/bin/bash -c 'printf \"T key.fullscreen\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
-          ;; F is now the Wurst-tree modal leader (see the F-leader block above); F+G swaps offhand.
-          [:l {:shell "/bin/bash -c 'printf \"T key.advancements\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
-          [:tab {:shell "/bin/bash -c 'printf \"T key.hotbar.1\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
-          [:q {:shell "/bin/bash -c 'printf \"T key.hotbar.2\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
-          [:e {:shell "/bin/bash -c 'printf \"T key.hotbar.3\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
-          [:r {:shell "/bin/bash -c 'printf \"T key.hotbar.4\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
-          [:z {:shell "/bin/bash -c 'printf \"T key.hotbar.5\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
-          [:x {:shell "/bin/bash -c 'printf \"T key.hotbar.6\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
-          [:c {:shell "/bin/bash -c 'printf \"T key.hotbar.7\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
-          [:v {:shell "/bin/bash -c 'printf \"T key.freecam.toggle\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
-          [:m {:shell "/bin/bash -c 'printf \"T key.antique_atlas.open\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
-          [:g {:shell "/bin/bash -c 'printf \"T key.backslot.switch_backslot\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
-          [:left_control {:shell "/bin/bash -c 'printf \"T keybinds.combatroll.roll\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
-          [:j {:shell "/bin/bash -c 'printf \"T key.crawl\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
-          [:open_bracket {:shell "/bin/bash -c 'printf \"T key.fbp.open_settings\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
-          [:f6 {:shell "/bin/bash -c 'printf \"T key.firstperson.toggle\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
-          ;; 1-4 are now Timer speeds, aircraft dismount moved to 0 (see the F-leader block above).
-          [:b {:shell "/bin/bash -c 'printf \"T key.inmis.open_backpack\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
-          [:k {:shell "/bin/bash -c 'printf \"T key.levelz.openskillscreen\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
-          [:y {:shell "/bin/bash -c 'printf \"T key.niftycarts.action\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
-          [:f4 {:shell "/bin/bash -c 'printf \"T nimble.keybind.frontView\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
-          [:f10 {:shell "/bin/bash -c 'printf \"T key.presencefootsteps.settings\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
-          [:h {:shell "/bin/bash -c 'printf \"T desc.seasonhud.keybind.options\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
-          [:n {:shell "/bin/bash -c 'printf \"T key.smallships.ship_sail\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 0]]]
-        ]}
-
-        {:des "MCBridge screen - hovered slot actions (Arthur layout); mouse passes through"
-         :rules [
-          [:tab {:shell "/bin/bash -c 'printf \"G /gui/swap/1\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_screen" 1] ["caps-mode" 0]]]
-          [:q {:shell "/bin/bash -c 'printf \"G /gui/swap/2\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_screen" 1] ["caps-mode" 0]]]
-          [:e {:shell "/bin/bash -c 'printf \"G /gui/swap/3\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_screen" 1] ["caps-mode" 0]]]
-          [:r {:shell "/bin/bash -c 'printf \"G /gui/swap/4\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_screen" 1] ["caps-mode" 0]]]
-          [:z {:shell "/bin/bash -c 'printf \"G /gui/swap/5\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_screen" 1] ["caps-mode" 0]]]
-          [:x {:shell "/bin/bash -c 'printf \"G /gui/swap/6\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_screen" 1] ["caps-mode" 0]]]
-          [:c {:shell "/bin/bash -c 'printf \"G /gui/swap/7\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_screen" 1] ["caps-mode" 0]]]
-          [:spacebar {:shell "/bin/bash -c 'printf \"G /gui/quickmove\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_screen" 1] ["caps-mode" 0]]]
-          [:t {:shell "/bin/bash -c 'printf \"G /gui/drop\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_screen" 1] ["caps-mode" 0]]]
-          [:escape {:shell "/bin/bash -c 'printf \"G /gui/close\" >/dev/udp/127.0.0.1/25581'"} [:minecraft ["mc_ctx_screen" 1] ["caps-mode" 0]]]
-]}
-
-        {:des "MCBridge chat - raw keyboard passthrough"
-         :rules []}
-
+        ;; ===== MCBridge Caps+Period overflow — still bridge-owned =====
+        ;; Ordinary gameplay, screen actions, F/Wurst, Timer, and mouse buttons are in-process.
         {:des "MCBridge page 2 leader (gameplay Caps+period)"
          :rules [[:period ["mcbridge-page2" 1] [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 1]]]]}
 
