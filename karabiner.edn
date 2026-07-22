@@ -249,6 +249,14 @@
          :rules [[:h {:shell "/bin/bash -c 'for i in 1 2; do printf \"W damage 7\" >/dev/udp/127.0.0.1/25581; sleep 0.1; done'"}
                   [:minecraft ["mc_ctx_gameplay" 1] ["caps-mode" 1]]]]}
 
+        ;; ===== Minecraft: swallow lethal Cmd shortcuts during gameplay =====
+        ;; Trackpad mode holds Left Cmd as key.use (eat/shield); Tab/Q are hotbar keys.
+        ;; Without this, Cmd+Q quits the game and Cmd+Tab yanks focus mid-fight.
+        ;; Gated on gameplay ctx so Cmd+Tab still app-switches from inventory/ESC menus.
+        {:des "Minecraft - swallow Cmd+Q / Cmd+Tab in gameplay"
+         :rules [[:!Cq :vk_none [:minecraft ["mc_ctx_gameplay" 1]]]
+                 [:!Ctab :vk_none [:minecraft ["mc_ctx_gameplay" 1]]]]}
+
         ;; ===== MCBridge Caps+Period overflow — still bridge-owned =====
         ;; Ordinary gameplay, screen actions, F/Wurst, Timer, and mouse buttons are in-process.
         {:des "MCBridge page 2 leader (gameplay Caps+period)"
@@ -321,6 +329,12 @@
                  [:r "/Users/linyanyu/karabiner-config/scripts/toggle-key-repeat.sh" [:!minecraft ["caps-mode" 1]]]
                  ;; B: toggle JankyBorders fade animation on/off (script shows HUD)
                  [:b "/Users/linyanyu/karabiner-config/scripts/toggle-border-fade.sh" [:!minecraft ["caps-mode" 1]]]
+                 ;; M: swap native menu bar <-> SketchyBar (daemon applescript —
+                 ;; defaults write doesn't apply live, System Events is the only
+                 ;; channel that works; hover-reveal is broken under SketchyBar).
+                 ;; :repeat false — a held key must not machine-gun the ~500ms
+                 ;; toggle (script also has a lock, but don't even queue them)
+                 [:m {:shell "echo 'menubar-toggle' > /tmp/karabiner-scripts.fifo &" :repeat false} [:!minecraft ["caps-mode" 1]]]
                  ;; Window: hold-based (HOLD w, release w to exit)
                  [:w [["window-mode" 1] [:hud "show window"]] [:!minecraft ["caps-mode" 1]]
                   {:afterup [["window-mode" 0] ["resize-mode" 0] [:hud "hide"]]}]]}]}
