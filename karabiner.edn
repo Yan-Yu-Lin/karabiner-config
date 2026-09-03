@@ -31,10 +31,15 @@
              :hud       "echo '%s' > /tmp/karabiner-hud.fifo &"
              :open      "echo 'url %s' > /tmp/karabiner-hud.fifo &"}
 
- :applications {:arc       ["^company\\.thebrowser\\.Browser$"]
+ :applications {;; Games: vim nav layer + Right-Cmd→Hyper are disabled while one of
+                ;; these is frontmost (keyboard goes back to stock for gaming).
+                ;; Add more game bundle IDs here as needed.
+                :games     ["^com\\.grizzlygames\\.thronefall$"]
+                :arc       ["^company\\.thebrowser\\.Browser$"]
                 :raycast   ["^com\\.raycast\\.macos$"]
                 :ghostty   ["^com\\.mitchellh\\.ghostty$"]
-                :cmux      ["^com\\.cmuxterm\\.app$"]
+                :cmux      ["^com\\.cmuxterm\\.app$"
+                            "^com\\.cmuxterm\\.app\\.smooth$"]
                 ;; Prism's Minecraft JVM has no bundle id on this Mac, so match its executable path too.
                 :minecraft [:identifiers "^org\\.prismlauncher\\.PrismLauncher$"
                             :paths "^/Users/linyanyu/Library/Application Support/PrismLauncher/java/.*/bin/java$"]}
@@ -43,7 +48,48 @@
  :layers {}
  :simlayers {}
 
- :main [;; ===== Fix: Zhuyin eats Ctrl+number — re-send to bypass input method =====
+ :main [;; ===== lan-mouse: hand keyboard+trackpad to omarchy (2026-09-03) =====
+        ;; MUST be the first block. Variable `lanmouse` (0/1) is the single
+        ;; source of truth, set by ~/.local/bin/lm-switch — never a profile switch.
+        ;;
+        ;; lanmouse=0 (normal Mac use): Right Cmd is already Hyper by the time
+        ;; Backspace arrives (Karabiner matches per key-event, not per chord),
+        ;; so the outbound trigger matches Hyper+Backspace.
+        ;; lanmouse=1 (omarchy has the keyboard): the catch-all below keeps
+        ;; Right Cmd physical, so the return trigger matches right_command.
+        ;;
+        ;; While lanmouse=1 everything else passes through RAW (omarchy's keyd
+        ;; does the remapping there). Exceptions before the catch-all:
+        ;;   Caps Lock → F19 on the wire (a real caps_lock would toggle macOS
+        ;;     caps/input-source; keyd on omarchy maps f19 back to the caps layer).
+        ;;     F19 is RESERVED for this — not a free Raycast phantom key anymore.
+        ;;   F1-F12 → fn+F1..F12 so they leave as real F keys (fnState=0 would
+        ;;     otherwise turn them into media keys after complex mods).
+        {:des "lan-mouse - switch + raw pass-through while omarchy has input"
+         :rules [[:!TOC##delete_or_backspace {:shell "/Users/linyanyu/.local/bin/lm-switch to-omarchy" :repeat false} [["lanmouse" 0]]]
+                 [:!Q##delete_or_backspace   {:shell "/Users/linyanyu/.local/bin/lm-switch to-mac"     :repeat false} [["lanmouse" 1]]]
+                 [:##caps_lock :f19 [["lanmouse" 1]]]
+                 [:##f1  :!Ff1  [["lanmouse" 1]]]
+                 [:##f2  :!Ff2  [["lanmouse" 1]]]
+                 [:##f3  :!Ff3  [["lanmouse" 1]]]
+                 [:##f4  :!Ff4  [["lanmouse" 1]]]
+                 [:##f5  :!Ff5  [["lanmouse" 1]]]
+                 [:##f6  :!Ff6  [["lanmouse" 1]]]
+                 [:##f7  :!Ff7  [["lanmouse" 1]]]
+                 [:##f8  :!Ff8  [["lanmouse" 1]]]
+                 [:##f9  :!Ff9  [["lanmouse" 1]]]
+                 [:##f10 :!Ff10 [["lanmouse" 1]]]
+                 [:##f11 :!Ff11 [["lanmouse" 1]]]
+                 [:##f12 :!Ff12 [["lanmouse" 1]]]
+                 ;; raw Karabiner manipulator (goku passes {:type :basic} maps
+                 ;; through untouched): from.any + to.from_event = pass-through
+                 ;; that pre-empts every later complex modification.
+                 {:type :basic
+                  :from {:any "key_code" :modifiers {:optional ["any"]}}
+                  :to [{:from_event true}]
+                  :conditions [{:type "variable_if" :name "lanmouse" :value 1}]}]}
+
+        ;; ===== Fix: Zhuyin eats Ctrl+number — re-send to bypass input method =====
         {:des "Zhuyin - pass through Ctrl+numbers"
          :rules [[:!T1 :!T1 [:zhuyin]] [:!T2 :!T2 [:zhuyin]] [:!T3 :!T3 [:zhuyin]]
                  [:!T4 :!T4 [:zhuyin]] [:!T5 :!T5 [:zhuyin]] [:!T6 :!T6 [:zhuyin]]
@@ -147,9 +193,40 @@
                  [:escape [["resize-mode" 0] [:hud "show window"]] [:resize-mode]]]}
 
 
+        ;; ===== Brightness keys =====
+        ;; Handled by BetterDisplay's native brightness-key takeover
+        ;; (videoMediaKeyAssumeControlMode=1 + allowKeyboardControl off for the
+        ;; built-in display) — native feel, OSD, and only the external moves
+        ;; while mirrored. Karabiner stays out of F1/F2. The old script route
+        ;; (scripts/brightness-key.sh) is kept on disk as a fallback.
+
         ;; ===== Right Command → Hyper (Cmd+Ctrl+Opt) =====
+        ;; ===== Raycast hotkeys via phantom-key indirection =====
+        ;; Raycast's hotkeys are re-recorded onto F17/F18/... (keys no physical
+        ;; keyboard sends). Karabiner turns ⌥S/⌥D into those phantom keys
+        ;; everywhere EXCEPT games — so outside games the combo triggers
+        ;; Raycast exactly as before, and inside games the game receives the
+        ;; real ⌥S/⌥D while Raycast (still running) hears nothing.
+        ;; To add another Raycast hotkey: pick the next free F-key (F21+ —
+        ;; F19 is the lan-mouse Caps wire key, F20 the Minecraft caps gate),
+        ;; add a row here, recompile,
+        ;; then re-record the hotkey in Raycast by pressing the ⌥-combo.
+        {:des "Raycast phantom hotkeys - ⌥S/⌥D → F17/F18 outside games"
+         :rules [[:!Os :f17 [:!games]]
+                 [:!Od :f18 [:!games]]]}
+
+        ;; Disabled in games — Raycast hotkeys live on Hyper, so this also
+        ;; stops Raycast from firing mid-game.
         {:des "Right Command → Hyper (Cmd+Ctrl+Opt)"
-         :rules [[:##right_command :!TOleft_command]]}
+         :rules [[:##right_command :!TOleft_command [:!games]]]}
+
+        ;; Caps distinguishes swap from the existing Right Command Hyper focus
+        ;; bindings without changing Right Command's proven modifier mapping.
+        {:des "Caps + Hyper + HJKL → AeroSpace swap"
+         :rules [[:!TOCh [:aero "swap left"]  [:!games ["caps-mode" 1]]]
+                 [:!TOCj [:aero "swap down"]  [:!games ["caps-mode" 1]]]
+                 [:!TOCk [:aero "swap up"]    [:!games ["caps-mode" 1]]]
+                 [:!TOCl [:aero "swap right"] [:!games ["caps-mode" 1]]]]}
 
         ;; ===== Vim navigation layer (migrated from BTT) =====
         ;; Left Option held = movement. Karabiner gives key-repeat + rollover
@@ -157,28 +234,29 @@
         ;;   h/j/k/l = arrows   w/b = word fwd/back
         ;;   a = end of line    i = start of line
         ;;   g = top of doc     shift+g = bottom of doc (vim gg / G)
+        ;; Disabled in games (:!games) — Option combos go straight to the game.
         {:des "Vim nav - Option + h/j/k/l/w/b/a/i/g"
-         :rules [[:!Oh :left_arrow]
-                 [:!Oj :down_arrow]
-                 [:!Ok :up_arrow]
-                 [:!Ol :right_arrow]
-                 [:!Ow :!Oright_arrow]
-                 [:!Ob :!Oleft_arrow]
-                 [:!Oa :!Cright_arrow]
-                 [:!Oi :!Cleft_arrow]
-                 [:!Og :!Cup_arrow]]}
+         :rules [[:!Oh :left_arrow [:!games]]
+                 [:!Oj :down_arrow [:!games]]
+                 [:!Ok :up_arrow [:!games]]
+                 [:!Ol :right_arrow [:!games]]
+                 [:!Ow :!Oright_arrow [:!games]]
+                 [:!Ob :!Oleft_arrow [:!games]]
+                 [:!Oa :!Cright_arrow [:!games]]
+                 [:!Oi :!Cleft_arrow [:!games]]
+                 [:!Og :!Cup_arrow [:!games]]]}
 
         ;; Option+Shift = same movement but selecting (except g = bottom of doc)
         {:des "Vim select - Option+Shift + h/j/k/l/w/b/a/i, g = doc bottom"
-         :rules [[:!OSh :!Sleft_arrow]
-                 [:!OSj :!Sdown_arrow]
-                 [:!OSk :!Sup_arrow]
-                 [:!OSl :!Sright_arrow]
-                 [:!OSw :!OSright_arrow]
-                 [:!OSb :!OSleft_arrow]
-                 [:!OSa :!CSright_arrow]
-                 [:!OSi :!CSleft_arrow]
-                 [:!OSg :!Cdown_arrow]]}
+         :rules [[:!OSh :!Sleft_arrow [:!games]]
+                 [:!OSj :!Sdown_arrow [:!games]]
+                 [:!OSk :!Sup_arrow [:!games]]
+                 [:!OSl :!Sright_arrow [:!games]]
+                 [:!OSw :!OSright_arrow [:!games]]
+                 [:!OSb :!OSleft_arrow [:!games]]
+                 [:!OSa :!CSright_arrow [:!games]]
+                 [:!OSi :!CSleft_arrow [:!games]]
+                 [:!OSg :!Cdown_arrow [:!games]]]}
 
         ;; ===== Per-app: Arc Browser =====
         {:des "Arc - caps+j/k spaces, caps+s sort tabs, cmd+\\ toggle pinned"
