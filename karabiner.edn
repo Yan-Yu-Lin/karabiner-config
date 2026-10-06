@@ -38,8 +38,9 @@
                 :arc       ["^company\\.thebrowser\\.Browser$"]
                 :raycast   ["^com\\.raycast\\.macos$"]
                 :ghostty   ["^com\\.mitchellh\\.ghostty$"]
+                ;; Also matches any cmux Smooth fork build: .smooth, .smoothnext, ...
                 :cmux      ["^com\\.cmuxterm\\.app$"
-                            "^com\\.cmuxterm\\.app\\.smooth$"]
+                            "^com\\.cmuxterm\\.app\\.smooth[a-z]*$"]
                 ;; Prism's Minecraft JVM has no bundle id on this Mac, so match its executable path too.
                 :minecraft [:identifiers "^org\\.prismlauncher\\.PrismLauncher$"
                             :paths "^/Users/linyanyu/Library/Application Support/PrismLauncher/java/.*/bin/java$"]}
