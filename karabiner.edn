@@ -39,8 +39,10 @@
                 :raycast   ["^com\\.raycast\\.macos$"]
                 :ghostty   ["^com\\.mitchellh\\.ghostty$"]
                 ;; Also matches any cmux Smooth fork build: .smooth, .smoothnext, ...
+                ;; and Rex (same default pane/zoom/session keys as cmux)
                 :cmux      ["^com\\.cmuxterm\\.app$"
-                            "^com\\.cmuxterm\\.app\\.smooth[a-z]*$"]
+                            "^com\\.cmuxterm\\.app\\.smooth[a-z]*$"
+                            "^com\\.superlogical\\.rex$"]
                 ;; Prism's Minecraft JVM has no bundle id on this Mac, so match its executable path too.
                 :minecraft [:identifiers "^org\\.prismlauncher\\.PrismLauncher$"
                             :paths "^/Users/linyanyu/Library/Application Support/PrismLauncher/java/.*/bin/java$"]}

@@ -43,6 +43,26 @@
                         "focus pane"
                     ],
                     [
+                        "F",
+                        "zoom"
+                    ],
+                    [
+                        "[ / ]",
+                        "workspace"
+                    ]
+                ]
+            },
+            "com.cmuxterm.app.smooth": {
+                "extra": [
+                    [
+                        "H/J/K/L",
+                        "focus pane"
+                    ],
+                    [
+                        "F",
+                        "zoom"
+                    ],
+                    [
                         "[ / ]",
                         "workspace"
                     ]
@@ -55,7 +75,7 @@
                         "tmux pane"
                     ],
                     [
-                        "\u21e7 H/J/K/L",
+                        "⇧ H/J/K/L",
                         "swap pane"
                     ],
                     [
@@ -101,6 +121,38 @@
                     [
                         "G",
                         "mc tools"
+                    ]
+                ]
+            },
+            "com.cmuxterm.app.smoothnext": {
+                "extra": [
+                    [
+                        "H/J/K/L",
+                        "focus pane"
+                    ],
+                    [
+                        "F",
+                        "zoom"
+                    ],
+                    [
+                        "[ / ]",
+                        "workspace"
+                    ]
+                ]
+            },
+            "com.superlogical.rex": {
+                "extra": [
+                    [
+                        "H/J/K/L",
+                        "focus pane"
+                    ],
+                    [
+                        "F",
+                        "zoom"
+                    ],
+                    [
+                        "[ / ]",
+                        "session"
                     ]
                 ]
             }
@@ -159,7 +211,7 @@
                 "focus"
             ],
             [
-                "\u21e7 H/J/K/L",
+                "⇧ H/J/K/L",
                 "move"
             ],
             [
@@ -179,7 +231,7 @@
                 "workspace"
             ],
             [
-                "\u21e7 1-9",
+                "⇧ 1-9",
                 "move to ws"
             ],
             [
@@ -238,11 +290,11 @@
         "keys": [
             [
                 "H/L",
-                "width \u2212/+"
+                "width −/+"
             ],
             [
                 "J/K",
-                "height +/\u2212"
+                "height +/−"
             ],
             [
                 "ESC",
@@ -254,19 +306,19 @@
         "title": "REPEAT DELAY: 500 ms",
         "keys": [
             [
-                "\u25cf",
+                "●",
                 "500 slow"
             ],
             [
-                "\u25cb",
+                "○",
                 "250 medium"
             ],
             [
-                "\u25cb",
+                "○",
                 "180 fast"
             ],
             [
-                "\u21ea R",
+                "⇪ R",
                 "cycle"
             ]
         ]
@@ -275,19 +327,19 @@
         "title": "REPEAT DELAY: 250 ms",
         "keys": [
             [
-                "\u25cb",
+                "○",
                 "500 slow"
             ],
             [
-                "\u25cf",
+                "●",
                 "250 medium"
             ],
             [
-                "\u25cb",
+                "○",
                 "180 fast"
             ],
             [
-                "\u21ea R",
+                "⇪ R",
                 "cycle"
             ]
         ]
@@ -296,19 +348,19 @@
         "title": "REPEAT DELAY: 180 ms",
         "keys": [
             [
-                "\u25cb",
+                "○",
                 "500 slow"
             ],
             [
-                "\u25cb",
+                "○",
                 "250 medium"
             ],
             [
-                "\u25cf",
+                "●",
                 "180 fast"
             ],
             [
-                "\u21ea R",
+                "⇪ R",
                 "cycle"
             ]
         ]
@@ -317,15 +369,15 @@
         "title": "BORDER FADE: ON",
         "keys": [
             [
-                "\u25cf",
+                "●",
                 "fade 150 ms"
             ],
             [
-                "\u25cb",
+                "○",
                 "instant"
             ],
             [
-                "\u21ea B",
+                "⇪ B",
                 "toggle"
             ]
         ]
@@ -334,21 +386,21 @@
         "title": "BORDER FADE: OFF",
         "keys": [
             [
-                "\u25cb",
+                "○",
                 "fade 150 ms"
             ],
             [
-                "\u25cf",
+                "●",
                 "instant"
             ],
             [
-                "\u21ea B",
+                "⇪ B",
                 "toggle"
             ]
         ]
     },
     "wurst-attack": {
-        "title": "WURST \u00b7 ATTACK",
+        "title": "WURST · ATTACK",
         "keys": [
             [
                 "A",
@@ -373,7 +425,7 @@
         ]
     },
     "wurst-sky": {
-        "title": "WURST \u00b7 SKYWALKER",
+        "title": "WURST · SKYWALKER",
         "keys": [
             [
                 "W",
@@ -398,7 +450,7 @@
         ]
     },
     "wurst-detect": {
-        "title": "WURST \u00b7 DETECTION",
+        "title": "WURST · DETECTION",
         "keys": [
             [
                 "W",
@@ -423,7 +475,7 @@
         ]
     },
     "wurst-work": {
-        "title": "WURST \u00b7 WORKSHOP",
+        "title": "WURST · WORKSHOP",
         "keys": [
             [
                 "W",
@@ -452,7 +504,7 @@
         ]
     },
     "wurst-wacky": {
-        "title": "WURST \u00b7 WACKY",
+        "title": "WURST · WACKY",
         "keys": [
             [
                 "W",
