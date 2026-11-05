@@ -47,7 +47,8 @@
                 :minecraft [:identifiers "^org\\.prismlauncher\\.PrismLauncher$"
                             :paths "^/Users/linyanyu/Library/Application Support/PrismLauncher/java/.*/bin/java$"]}
  :input-sources {:zhuyin {:input_source_id "^com\\.apple\\.inputmethod\\.TCIM$"
-                          :input_mode_id "^com\\.apple\\.inputmethod\\.TCIM\\.Zhuyin$"}}
+                          :input_mode_id "^com\\.apple\\.inputmethod\\.TCIM\\.Zhuyin$"}
+                 :arthurzhuyin {:input_source_id "^dev\\.arthurlin\\.inputmethod\\.ArthurZhuyin"}}
  :layers {}
  :simlayers {}
 
@@ -91,6 +92,14 @@
                   :from {:any "key_code" :modifiers {:optional ["any"]}}
                   :to [{:from_event true}]
                   :conditions [{:type "variable_if" :name "lanmouse" :value 1}]}]}
+
+        ;; ===== ArthurZhuyin: Cmd+Space toggles 注音/英文 inside our own IME (2026-11-05) =====
+        ;; Arc/Chromium/Electron eat Cmd+Space before the IME sees it, so Karabiner
+        ;; swallows the key and tells the IME directly via a Darwin notification.
+        ;; Only while ArthurZhuyin is the selected input source.
+        ;; Source: ~/20-29-Development/26-experiments/apple-zhuyin-engine
+        {:des "ArthurZhuyin - Cmd+Space toggles Zhuyin/English"
+         :rules [[:!Cspacebar "/usr/bin/notifyutil -p dev.arthurlin.ArthurZhuyin.toggle" [:arthurzhuyin]]]}
 
         ;; ===== Fix: Zhuyin eats Ctrl+number — re-send to bypass input method =====
         {:des "Zhuyin - pass through Ctrl+numbers"
