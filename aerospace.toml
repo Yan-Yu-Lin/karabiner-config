@@ -52,11 +52,12 @@ run = 'layout floating'
 if.app-name-regex-substring = 'Calculator'
 run = 'layout floating'
 
-# LINE always lives on workspace 9 so its activity never lands on the current workspace
-# (no --focus-follows-window, so focus stays where you are)
+# Every LINE window (main window, note popups, settings...) is sent to workspace 4,
+# next to the social media apps, the moment it appears.
+# No --focus-follows-window, so the workspace you are on does not change.
 [[on-window-detected]]
 if.app-id = 'jp.naver.line.mac'
-run = 'move-node-to-workspace 9'
+run = 'move-node-to-workspace 4'
 
 # ============================================================================
 # Key mapping
