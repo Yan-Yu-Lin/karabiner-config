@@ -1,0 +1,3 @@
+# One bundle-id regex per line. Lines starting with # are ignored.
+# Used by game-raycast-watcher.sh (and mirrors the :games list in karabiner.edn).
+^com\.grizzlygames\.thronefall$
