@@ -205,6 +205,14 @@ Left Option = movement layer: H/J/K/L=arrows, W/B=word fwd/back, A=end of line, 
 ### Key repeat delay toggle (Caps + R)
 `scripts/toggle-key-repeat.sh` cycles the "delay until repeat" 500→250→180ms. Sets live value via `hidutil` (instant) + persists via `defaults write -g InitialKeyRepeat` (ticks of 15ms). HUD flashes the current speed (modes `repeat-500/250/180` in modes.json).
 
+### Menu bar <-> SketchyBar swap (Caps + M, added 2026-07-22)
+Swaps between SketchyBar and the native macOS menu bar via daemon action `menubar-toggle` (`scripts/toggle-menubar.applescript`, ~500ms). Exists because Arthur runs SketchyBar with the native bar auto-hidden, and hover-reveal doesn't work in that setup. One toggle does three things atomically:
+1. Flips menu bar auto-hide via System Events (`defaults write NSGlobalDomain _HIHideMenuBar` does NOT apply live — System Events is the only channel that works without logout).
+2. Hides/shows both SketchyBar instances (`sketchybar` + `sketchybar_row2`) so only one bar is ever visible.
+3. Compensates AeroSpace's `outer.top` gap (40 ↔ 10) via sed + `reload-config` — the gap is measured from the BOTTOM of the menu bar, so without this every tiled window shifts down 30px when the bar appears. sed must target `~/karabiner-config/aerospace.toml` directly (BSD sed -i refuses the `~/.config/aerospace` symlink).
+
+Guards: Karabiner binding uses `repeat: false` (a held key would machine-gun ~500ms toggles), and the script takes a `/tmp/.menubar-toggle.lock` mkdir-lock (skips if busy, stale locks >5s cleared). The script derives everything from the current auto-hide state, so it self-heals if the three pieces ever desync. ⚠️ The `feat/menu-bar-layer` branch plans Caps+M as a sub-layer entry; if that branch merges, move this toggle to a key inside that layer.
+
 ### Instant Space switch (Hyper + O/U, migrated from BTT 2026-07)
 `spacenav next|prev` switches real macOS Spaces with NO animation — same private mechanism BTT's "Move Left/Right a Space (Without Animation)" uses: a synthetic max-velocity DockSwipe CGEvent (undocumented type 30 / HID subtype 23) that Dock commits in ~1 frame. NOT `CGSManagedDisplaySetCurrentSpace` (that desyncs Dock/Mission Control outside Dock).
 
