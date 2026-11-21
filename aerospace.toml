@@ -138,6 +138,56 @@ alt-tab = 'workspace-back-and-forth'
 # Move workspace to next monitor
 alt-shift-tab = 'move-workspace-to-monitor --wrap-around next'
 
+# ----------------------------------------------------------------------------
+# Secure Input twins (2026-11-21)
+# While macOS Secure Input is on (password fields, some terminals), global
+# hotkeys of the form alt+<character key> never reach AeroSpace, but the same
+# key with ctrl added still does (measured: alt-y / alt-shift-y blocked,
+# ctrl-alt-1 / ctrl-alt-shift-1 / ctrl-alt-[ / ctrl-alt-tab still fire).
+# Karabiner turns physical Option+key into Ctrl+Option+key (see the
+# "AeroSpace - Option → Ctrl+Option" block in karabiner.edn), so these twins are
+# what actually fires. The plain alt-* bindings above stay as a fallback for
+# when Karabiner is not remapping (e.g. it is not running).
+# Keep each twin identical to its alt-* original.
+# ----------------------------------------------------------------------------
+ctrl-alt-1 = 'workspace 1'
+ctrl-alt-2 = 'workspace 2'
+ctrl-alt-3 = 'workspace 3'
+ctrl-alt-4 = 'workspace 4'
+ctrl-alt-5 = 'workspace 5'
+ctrl-alt-6 = 'workspace 6'
+ctrl-alt-7 = 'workspace 7'
+ctrl-alt-8 = 'workspace 8'
+ctrl-alt-9 = 'workspace 9'
+ctrl-alt-0 = 'workspace 10'
+
+ctrl-alt-q = 'workspace Q'
+ctrl-alt-leftSquareBracket = 'workspace ['
+ctrl-alt-rightSquareBracket = 'workspace ]'
+ctrl-alt-backslash = 'workspace "|"'
+
+ctrl-alt-shift-1 = 'move-node-to-workspace 1 --focus-follows-window'
+ctrl-alt-shift-2 = 'move-node-to-workspace 2 --focus-follows-window'
+ctrl-alt-shift-3 = 'move-node-to-workspace 3 --focus-follows-window'
+ctrl-alt-shift-4 = 'move-node-to-workspace 4 --focus-follows-window'
+ctrl-alt-shift-5 = 'move-node-to-workspace 5 --focus-follows-window'
+ctrl-alt-shift-6 = 'move-node-to-workspace 6 --focus-follows-window'
+ctrl-alt-shift-7 = 'move-node-to-workspace 7 --focus-follows-window'
+ctrl-alt-shift-8 = 'move-node-to-workspace 8 --focus-follows-window'
+ctrl-alt-shift-9 = 'move-node-to-workspace 9 --focus-follows-window'
+ctrl-alt-shift-0 = 'move-node-to-workspace 10 --focus-follows-window'
+
+ctrl-alt-shift-q = 'move-node-to-workspace Q --focus-follows-window'
+ctrl-alt-shift-leftSquareBracket = 'move-node-to-workspace [ --focus-follows-window'
+ctrl-alt-shift-rightSquareBracket = 'move-node-to-workspace ] --focus-follows-window'
+ctrl-alt-shift-backslash = 'move-node-to-workspace "|" --focus-follows-window'
+
+ctrl-alt-tab = 'workspace-back-and-forth'
+ctrl-alt-shift-tab = 'move-workspace-to-monitor --wrap-around next'
+
+# Twin of alt-shift-t (SketchyBar expanded view), defined further down.
+ctrl-alt-shift-t = 'exec-and-forget ~/.config/sketchybar/plugins/toggle.sh'
+
 # Toggle SketchyBar expanded view
 alt-shift-t = 'exec-and-forget ~/.config/sketchybar/plugins/toggle.sh'
 

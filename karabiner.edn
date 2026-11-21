@@ -240,6 +240,52 @@
                  [:!TOCk [:aero "swap up"]    [:!games ["caps-mode" 1]]]
                  [:!TOCl [:aero "swap right"] [:!games ["caps-mode" 1]]]]}
 
+        ;; ===== AeroSpace: Option+key → Ctrl+Option+key (Secure Input fix, 2026-11-21) =====
+        ;; While macOS Secure Input is on (password fields, some terminals), global
+        ;; hotkeys shaped Option+<character key> never reach AeroSpace; the same key
+        ;; with Ctrl added still does (measured). So every Option-only AeroSpace
+        ;; binding is sent as Ctrl+Option instead, and aerospace.toml binds matching
+        ;; ctrl-alt-* twins ("Secure Input twins" block there).
+        ;; Either Option key, either Shift key. Same :!games gate as the other
+        ;; Option layers.
+        ;; KEEP IN STEP with aerospace.toml: a key remapped here WITHOUT a twin there
+        ;; stops working.
+        {:des "AeroSpace - Option → Ctrl+Option (works under Secure Input)"
+         :rules [;; Option + number row / q / [ ] \ = switch workspace, Option+Tab = back-and-forth
+                 [{:key :1 :modi {:mandatory [:option]}} :!TO1 [:!games]]
+                 [{:key :2 :modi {:mandatory [:option]}} :!TO2 [:!games]]
+                 [{:key :3 :modi {:mandatory [:option]}} :!TO3 [:!games]]
+                 [{:key :4 :modi {:mandatory [:option]}} :!TO4 [:!games]]
+                 [{:key :5 :modi {:mandatory [:option]}} :!TO5 [:!games]]
+                 [{:key :6 :modi {:mandatory [:option]}} :!TO6 [:!games]]
+                 [{:key :7 :modi {:mandatory [:option]}} :!TO7 [:!games]]
+                 [{:key :8 :modi {:mandatory [:option]}} :!TO8 [:!games]]
+                 [{:key :9 :modi {:mandatory [:option]}} :!TO9 [:!games]]
+                 [{:key :0 :modi {:mandatory [:option]}} :!TO0 [:!games]]
+                 [{:key :q :modi {:mandatory [:option]}} :!TOq [:!games]]
+                 [{:key :open_bracket  :modi {:mandatory [:option]}} :!TOopen_bracket  [:!games]]
+                 [{:key :close_bracket :modi {:mandatory [:option]}} :!TOclose_bracket [:!games]]
+                 [{:key :backslash     :modi {:mandatory [:option]}} :!TObackslash     [:!games]]
+                 [{:key :tab           :modi {:mandatory [:option]}} :!TOtab           [:!games]]
+                 ;; Option+Shift + the same keys = move window to workspace / move workspace to monitor
+                 [{:key :1 :modi {:mandatory [:option :shift]}} :!TOS1 [:!games]]
+                 [{:key :2 :modi {:mandatory [:option :shift]}} :!TOS2 [:!games]]
+                 [{:key :3 :modi {:mandatory [:option :shift]}} :!TOS3 [:!games]]
+                 [{:key :4 :modi {:mandatory [:option :shift]}} :!TOS4 [:!games]]
+                 [{:key :5 :modi {:mandatory [:option :shift]}} :!TOS5 [:!games]]
+                 [{:key :6 :modi {:mandatory [:option :shift]}} :!TOS6 [:!games]]
+                 [{:key :7 :modi {:mandatory [:option :shift]}} :!TOS7 [:!games]]
+                 [{:key :8 :modi {:mandatory [:option :shift]}} :!TOS8 [:!games]]
+                 [{:key :9 :modi {:mandatory [:option :shift]}} :!TOS9 [:!games]]
+                 [{:key :0 :modi {:mandatory [:option :shift]}} :!TOS0 [:!games]]
+                 [{:key :q :modi {:mandatory [:option :shift]}} :!TOSq [:!games]]
+                 [{:key :open_bracket  :modi {:mandatory [:option :shift]}} :!TOSopen_bracket  [:!games]]
+                 [{:key :close_bracket :modi {:mandatory [:option :shift]}} :!TOSclose_bracket [:!games]]
+                 [{:key :backslash     :modi {:mandatory [:option :shift]}} :!TOSbackslash     [:!games]]
+                 [{:key :tab           :modi {:mandatory [:option :shift]}} :!TOStab           [:!games]]
+                 ;; Option+Shift+T = SketchyBar expanded view
+                 [{:key :t :modi {:mandatory [:option :shift]}} :!TOSt [:!games]]]}
+
         ;; ===== Vim navigation layer (migrated from BTT) =====
         ;; Left Option held = movement. Karabiner gives key-repeat + rollover
         ;; for free (both were broken in BTT).
